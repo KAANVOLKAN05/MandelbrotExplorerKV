@@ -491,16 +491,16 @@ int main(int argc, char* argv[])
   rImageData->AllocateScalars(VTK_DOUBLE, 1); 
   
   // Compute initial Mandelbrot for display
-  cout << "Compute initial Mandelbrot ... " << endl;  
+  std::cout << "Compute initial Mandelbrot ... " << endl;  
   computeMandelbrot(rImageData);  // Compute the whole set.
   
   // Configure image actor.  Actor has built-in mapper.
-  cout << "Configure image actor ... " << endl;    
+  std::cout << "Configure image actor ... " << endl;    
   imageActor->InterpolateOff();
   imageActor->GetMapper()->SetInputConnection(colorComplexPlane->GetOutputPort());
   
   // Configure renderer
-  cout << "Configure renderer ..." << endl;
+  std::cout << "Configure renderer ..." << endl;
   renderer->AddActor(imageActor);
   renderer->AddActor(scalarBar);
   renderer->SetBackground(colors->GetColor3d("MidnightBlue").GetData());
@@ -511,7 +511,7 @@ int main(int argc, char* argv[])
   renderer->ResetCamera();
   
   // Configure render window
-  cout << "Configure render window ..." << endl;
+  std::cout << "Configure render window ..." << endl;
   renWin->AddRenderer(renderer);
   renWin->SetSize(NX, NY); // set window size in pixels
   renWin->SetWindowName("Mandelbrot set in complex plane");
@@ -522,10 +522,10 @@ int main(int argc, char* argv[])
   iren->SetInteractorStyle(iStyle);
   
   // Start rendering thread
-  cout << "Start rendering thread......" << endl;  
+  std::cout << "Start rendering thread......" << endl;  
   renWin->Render();
 
-  cout << "Initialize interactor......" << endl;  
+  std::cout << "Initialize interactor......" << endl;  
   iren->Initialize();
   
   std::cout << "----------------------------------------" << std::endl;
