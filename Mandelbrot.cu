@@ -36,6 +36,7 @@
 // Display window dimensions
 #define NX 700
 #define NY 700
+#define NY0 350
 
 // Values used to distribute the jobs amongst the GPUs.
 #define NT NX*NY
@@ -581,7 +582,7 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
   //First attempt at assigning two GPUs
   cudaSetDevice(0)
   //I want half the NY so I wil create a new variable called NY0 which is NY/2
-  int NY0 = NY/2
+  //int NY0 = NY/2 (I will define it at the start cuz this did not work)
 
   // The value of lambda at each point in complex plane
   double *dlamr;
