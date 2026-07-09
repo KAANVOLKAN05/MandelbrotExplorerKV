@@ -576,6 +576,9 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
   
   //-------------------------------------------------------------------
   // Now set up CUDA stuff
+  
+
+ 
   // The value of lambda at each point in complex plane
   double *dlamr;
   gpuErrchk( cudaMalloc((void**)&dlamr, NX*NY*sizeof(double)) );  
@@ -614,6 +617,11 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
 
   // Insert returned z values into imageData
   insertZIntoImageData(imageData, Z.z);
+
+  //To free up the memory in the GPU device
+  gpuErrchk(cudaFree(dlamr));
+  gpuErrchk(cudaFree(dlami));
+  gpuErrchk(cudaFree(dz));
 
   std::cout << " ... done!\n" << std::endl;
   return;
