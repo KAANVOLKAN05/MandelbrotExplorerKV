@@ -625,9 +625,9 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
   insertZIntoImageData(imageData, Z.z);
 
   //To free up the memory in the GPU device
-  //gpuErrchk(cudaFree(dlamr));
-  //gpuErrchk(cudaFree(dlami));
-  //gpuErrchk(cudaFree(dz));
+  gpuErrchk(cudaFree(dlamr));
+  gpuErrchk(cudaFree(dlami));
+  gpuErrchk(cudaFree(dz));
 
   std::cout << " ... done!\n" << std::endl;
   return;
