@@ -14,6 +14,7 @@
 #include <vtkTextProperty.h>
 #include <vtkVector.h>
 #include <vtkCamera.h>
+#include <iostream>
 
 #include <complex>
 #include <vector>
@@ -580,7 +581,7 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
   
 
   //First attempt at assigning two GPUs
-  cudaSetDevice(0)
+  cudaSetDevice(0);
   //I want half the NY so I wil create a new variable called NY0 which is NY/2
   //int NY0 = NY/2 (I will define it at the start cuz this did not work)
 
