@@ -578,24 +578,28 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
   // Now set up CUDA stuff
   
 
- 
+  //First attempt at assigning two GPUs
+  cudaSetDevice(0)
+  //I want half the NY so I wil create a new variable called NY0 which is NY/2
+  int NY0 = NY/2
+
   // The value of lambda at each point in complex plane
   double *dlamr;
-  gpuErrchk( cudaMalloc((void**)&dlamr, NX*NY*sizeof(double)) );  
+  gpuErrchk( cudaMalloc((void**)&dlamr, NX*NY0*sizeof(double)) );  
   double *dlami;
-  gpuErrchk( cudaMalloc((void**)&dlami, NX*NY*sizeof(double)) );
+  gpuErrchk( cudaMalloc((void**)&dlami, NX*NY0*sizeof(double)) );
   
   // Make local lambda plane
   for (ix = 0; ix < NX; ix++) {
-    for (iy = 0; iy < NY; iy++) {
-      lamr[LINDEX(NY, NX, iy, ix)] = Z.xmin + ix*Z.dx;
-      lami[LINDEX(NY, NX, iy, ix)] = Z.ymin + iy*Z.dy;
+    for (iy = 0; iy < NY0; iy++) {
+      lamr[LINDEX(NY0, NX, iy, ix)] = Z.xmin + ix*Z.dx;
+      lami[LINDEX(NY0, NX, iy, ix)] = Z.ymin + iy*Z.dy;
     }
   }
   // Copy lambda plane values to device
-  gpuErrchk( cudaMemcpy(dlamr, lamr, NX*NY*sizeof(double),
+  gpuErrchk( cudaMemcpy(dlamr, lamr, NX*NY0*sizeof(double),
                         cudaMemcpyHostToDevice));
-  gpuErrchk( cudaMemcpy(dlami, lami, NX*NY*sizeof(double),
+  gpuErrchk( cudaMemcpy(dlami, lami, NX*NY0*sizeof(double),
                         cudaMemcpyHostToDevice));
 
   
@@ -603,7 +607,7 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
   // No need to copy anything here -- the plane's values will
   // be generated on the device.
   double *dz;
-  gpuErrchk( cudaMalloc((void**)&dz, NX*NY*sizeof(double)) );
+  gpuErrchk( cudaMalloc((void**)&dz, NX*NY0*sizeof(double)) );
 
   // Call fcn running on GPUs to iterate map N times.
   //printf("Calling f, [NBLK, NTHD] = [%d, %d], N = %d\n", NBLK, NTHD, Z.N);
@@ -612,7 +616,7 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
   //gpuErrchk( cudaDeviceSynchronize() );
 
   // Copy dz back to host after iteration.
-  gpuErrchk( cudaMemcpy(Z.z, &(dz[0]), NX*NY*sizeof(double),
+  gpuErrchk( cudaMemcpy(Z.z, &(dz[0]), NX*NY0*sizeof(double),
                         cudaMemcpyDeviceToHost) );
 
   // Insert returned z values into imageData
