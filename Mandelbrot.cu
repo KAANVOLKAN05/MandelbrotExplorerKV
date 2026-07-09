@@ -473,7 +473,7 @@ int main(int argc, char* argv[])
   colorComplexPlane->SetInputData(rImageData);  // set to real or imag plane
 
   // Configure initial ImageData
-  cout << "Configure colorComplexPlane ... " << endl;
+  std::cout << "Configure colorComplexPlane ... " << endl;
   Z.xmin = x0 - Z.w/2.0;
   Z.xmax = x0 + Z.w/2.0;  
   Z.ymin = y0 - Z.h/2.0;
