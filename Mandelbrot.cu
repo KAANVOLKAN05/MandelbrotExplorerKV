@@ -467,7 +467,7 @@ int main(int argc, char* argv[])
   //--------------------------------------------------------
   // Pass the original image and the lookup table to a
   // filter to create a color image.
-  cout << "Configure colorComplexPlane ... " << endl;
+  std::cout << "Configure colorComplexPlane ... " << endl;
   colorComplexPlane->SetLookupTable(lookupTable);
   colorComplexPlane->PassAlphaToOutputOn();
   colorComplexPlane->SetInputData(rImageData);  // set to real or imag plane
