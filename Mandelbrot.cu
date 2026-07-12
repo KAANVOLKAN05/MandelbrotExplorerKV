@@ -630,9 +630,13 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
     plan[g].h_lami = nullptr;
     plan[g].h_z    = nullptr;
 
-    plan[g].h_lamr = (double*) malloc(plan[g].local_Bytes);
-    plan[g].h_lami = (double*) malloc(plan[g].local_Bytes);
-    plan[g].h_z    = (double*) malloc(plan[g].local_Bytes);
+    //plan[g].h_lamr = (double*) malloc(plan[g].local_Bytes);
+    //plan[g].h_lami = (double*) malloc(plan[g].local_Bytes);
+    //plan[g].h_z    = (double*) malloc(plan[g].local_Bytes);
+    // Same as the previous lines but according to AI it is easier for CUDA to transfer, I must check this later
+    gpuErrchk(cudaMallocHost((void**)&plan[g].h_lamr, plan[g].local_Bytes));
+    gpuErrchk(cudaMallocHost((void**)&plan[g].h_lami, plan[g].local_Bytes));
+    gpuErrchk(cudaMallocHost((void**)&plan[g].h_z,    plan[g].local_Bytes));
 
     //Now lets fill the host memory we allocated
     int startIndex = plan[g].yOffset * NX;
@@ -650,7 +654,7 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
     gpuErrchk(cudaSetDevice(plan[g].deviceID));
 
     //Explanation will come later
-    //gpuErrchk(cudaStreamCreate(&plan[g].stream));
+    gpuErrchk(cudaStreamCreate(&plan[g].stream));
 
     //Now we can allocate the device memory via cudaMalloc
     gpuErrchk(cudaMalloc((void**)&plan[g].d_lamr, plan[g].local_Bytes));
@@ -658,8 +662,8 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
     gpuErrchk(cudaMalloc((void**)&plan[g].d_z, plan[g].local_Bytes));
 
     // Now we have to copy from host to the device memory we allocated
-    gpuErrchk(cudaMemcpy(plan[g].d_lamr, plan[g].h_lamr, plan[g].local_Bytes, cudaMemcpyHostToDevice));
-    gpuErrchk(cudaMemcpy(plan[g].d_lami, plan[g].h_lami, plan[g].local_Bytes, cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpyAsync(plan[g].d_lamr, plan[g].h_lamr, plan[g].local_Bytes, cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpyAsync(plan[g].d_lami, plan[g].h_lami, plan[g].local_Bytes, cudaMemcpyHostToDevice));
     
 
     int threads = 256;
@@ -667,37 +671,44 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
 
     //Now lets launch the kernel 
 
-    f<<<blocks,threads>>>(plan[g].d_z, plan[g].d_lamr, plan[g].d_lami, plan[g].local_N, Z.N);
+    f<<<blocks,threads 0, plan[g].stream>>>(plan[g].d_z, plan[g].d_lamr, plan[g].d_lami, plan[g].local_N, Z.N);
     gpuErrchk(cudaPeekAtLastError());
     //Now let us add to the offset from before
     current_y_offset = current_y_offset + plan[g].local_NY;
     
-    gpuErrchk(cudaMemcpy(plan[g].h_z,plan[g].d_z,plan[g].local_Bytes,cudaMemcpyDeviceToHost));
+    gpuErrchk(cudaMemcpyAsync(plan[g].h_z,plan[g].d_z,plan[g].local_Bytes,cudaMemcpyDeviceToHost));
     
-    
-    
+
+
+  }
+  for (int g = 0; g < GPU_N; g++) {
+    gpuErrchk(cudaSetDevice(plan[g].deviceID));
+    gpuErrchk(cudaStreamSynchronize(plan[g].stream));
+  }
+  for (int g = 0; g < GPU_N; g++) {
     int zStartIndex = plan[g].yOffset * NX;
+
     memcpy(Z.z + zStartIndex,
-       plan[g].h_z,
-       plan[g].local_Bytes);
-
-
+           plan[g].h_z,
+           plan[g].local_Bytes);
   }
   
   // Insert returned z values into imageData
   insertZIntoImageData(imageData, Z.z);
 
  for (int g = 0; g < GPU_N; g++) {
-    free(plan[g].h_lamr);
-    free(plan[g].h_lami);
-    free(plan[g].h_z);
-
     gpuErrchk(cudaSetDevice(plan[g].deviceID));
 
     gpuErrchk(cudaFree(plan[g].d_lamr));
     gpuErrchk(cudaFree(plan[g].d_lami));
     gpuErrchk(cudaFree(plan[g].d_z));
-}
+
+    gpuErrchk(cudaStreamDestroy(plan[g].stream));
+
+    gpuErrchk(cudaFreeHost(plan[g].h_lamr));
+    gpuErrchk(cudaFreeHost(plan[g].h_lami));
+    gpuErrchk(cudaFreeHost(plan[g].h_z));
+  }
   std::cout << " ... done!\n" << std::endl;
   return;
 }
