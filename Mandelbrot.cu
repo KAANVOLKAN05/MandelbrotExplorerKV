@@ -574,8 +574,11 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
   // complex plane Z.  It then sticks the updated set into
   // imageData so it can be displayed.
   int ix, iy;
-  double lamr[NX*NY];
-  double lami[NX*NY];
+  double *lamr;
+  double *lami;
+
+  gpuErrchk(cudaMallocHost((void**)&lamr, NX * NY * sizeof(double)));
+  gpuErrchk(cudaMallocHost((void**)&lami, NX * NY * sizeof(double)));
 
   
   
@@ -709,6 +712,8 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
     gpuErrchk(cudaFreeHost(plan[g].h_lami));
     gpuErrchk(cudaFreeHost(plan[g].h_z));
   }
+  gpuErrchk(cudaFreeHost(lamr));
+  gpuErrchk(cudaFreeHost(lami));
   std::cout << " ... done!\n" << std::endl;
   return;
 }
