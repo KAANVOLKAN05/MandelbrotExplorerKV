@@ -671,7 +671,7 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
 
     //Now lets launch the kernel 
 
-    f<<<blocks,threads 0, plan[g].stream>>>(plan[g].d_z, plan[g].d_lamr, plan[g].d_lami, plan[g].local_N, Z.N);
+    f<<<blocks,threads, 0, plan[g].stream>>>(plan[g].d_z, plan[g].d_lamr, plan[g].d_lami, plan[g].local_N, Z.N);
     gpuErrchk(cudaPeekAtLastError());
     //Now let us add to the offset from before
     current_y_offset = current_y_offset + plan[g].local_NY;
