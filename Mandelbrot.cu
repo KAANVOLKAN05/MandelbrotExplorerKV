@@ -15,7 +15,7 @@
 #include <vtkVector.h>
 #include <vtkCamera.h>
 #include <iostream>
-
+#include <cstring>
 #include <complex>
 #include <vector>
 #include <array>
@@ -24,6 +24,9 @@
 
 // #include <mpreal.h> 
 #include <getopt.h>
+
+//Kaan Volkan's MultiGPU struct header
+#include "MultiGPU.h"
 
 // Helper macross
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -74,7 +77,7 @@ ComplexPlane Z;
 // Declare fcns computing the Mandelbrot set in the complex plane.
 void computeMandelbrot(vtkUniformGrid *imageData);
 __global__
-void f(double *z, double *lamr, double *lami, int N);
+void f(double *z, double *lamr, double *lami, int loacl_N, int N);
 
 // Declare host-side graphics manipulation fcns.
 void moveZoom(int i, int j, double zoom);
@@ -573,24 +576,26 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
   int ix, iy;
   double lamr[NX*NY];
   double lami[NX*NY];
+
   
-  std::cout << "Use GPUs to compute Mandelbrot set...." << std::endl;
+  
   
   //-------------------------------------------------------------------
   // Now set up CUDA stuff
-  
 
-  //First attempt at assigning two GPUs
-  cudaSetDevice(0);
-  //I want half the NY so I wil create a new variable called NY0 which is NY/2
-  //int NY0 = NY/2 (I will define it at the start cuz this did not work)
 
-  // The value of lambda at each point in complex plane
-  double *dlamr;
-  gpuErrchk( cudaMalloc((void**)&dlamr, NX*NY*sizeof(double)) );  
-  double *dlami;
-  gpuErrchk( cudaMalloc((void**)&dlami, NX*NY*sizeof(double)) );
-  
+
+  // Create a plans array to hold the plans for each of the GPUs. 
+  //TGPUplan is defined under the header file.
+  TGPUplan plan[8];
+
+
+
+  // First we check how many GPUs we have in the system
+  int GPU_N;
+  gpuErrchk(cudaGetDeviceCount(&GPU_N));
+  std::cout << "We have " << GPU_N << " GPU devices" << std::endl;
+
   // Make local lambda plane
   for (ix = 0; ix < NX; ix++) {
     for (iy = 0; iy < NY; iy++) {
@@ -598,37 +603,101 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
       lami[LINDEX(NY, NX, iy, ix)] = Z.ymin + iy*Z.dy;
     }
   }
-  // Copy lambda plane values to device
-  gpuErrchk( cudaMemcpy(dlamr, lamr, NX*NY*sizeof(double),
-                        cudaMemcpyHostToDevice));
-  gpuErrchk( cudaMemcpy(dlami, lami, NX*NY*sizeof(double),
-                        cudaMemcpyHostToDevice));
 
+  //We want to divide the computation by rows
+  //Hence we need to divide how many rows we have by our GPU count to find how many rows each GPU needs to handle
+  int rows_per_GPU = NY / GPU_N;
+  int rows_remainder = NY % GPU_N;
+  int current_y_offset = 0;
+  //Now lets start making these plans for what each GPU needs to be told
+  for (int g = 0; g < GPU_N; g++)
+  {
+    plan[g].deviceID = g; //Device=0,1,2,3,...
+    plan[g].xOffset = 0;  //We are only dividing by rows so no need to offset in the colums
+    plan[g].yOffset = current_y_offset; // I will be incrementing this at the end of the loop
+    plan[g].global_NX = NX;   //Nothing suprising
+    plan[g].global_NY = NY;   //Nothing suprising
+    plan[g].local_NX = NX;
+    plan[g].local_NY = rows_per_GPU;
+    if (g == GPU_N - 1 ){
+      plan[g].local_NY += rows_remainder;  // For the Last GPU, add the nbumber of leftover rows too. 
+    }
+    plan[g].local_N = plan[g].local_NY * plan[g].local_NX;
+    plan[g].local_Bytes = plan[g].local_N * sizeof(double);
+    
+    // It is safer to first assign nullpointers to these in case a failure occurs later on.
+    plan[g].h_lamr = nullptr;
+    plan[g].h_lami = nullptr;
+    plan[g].h_z    = nullptr;
+
+    plan[g].h_lamr = (double*) malloc(plan[g].local_Bytes);
+    plan[g].h_lami = (double*) malloc(plan[g].local_Bytes);
+    plan[g].h_z    = (double*) malloc(plan[g].local_Bytes);
+
+    //Now lets fill the host memory we allocated
+    int startIndex = plan[g].yOffset * NX;
+
+    memcpy(plan[g].h_lamr, lamr + startIndex, plan[g].local_Bytes);
+    memcpy(plan[g].h_lami, lami + startIndex, plan[g].local_Bytes);
+
+
+    // It is safer to first assign nullpointers to these in case a failure occurs later on.
+    plan[g].d_lamr = nullptr;
+    plan[g].d_lami = nullptr;
+    plan[g].d_z    = nullptr;
+
+    //Now before allocating the memory on the GPU, lets select our device
+    gpuErrchk(cudaSetDevice(plan[g].deviceID));
+
+    //Explanation will come later
+    //gpuErrchk(cudaStreamCreate(&plan[g].stream));
+
+    //Now we can allocate the device memory via cudaMalloc
+    gpuErrchk(cudaMalloc((void**)&plan[g].d_lamr, plan[g].local_Bytes));
+    gpuErrchk(cudaMalloc((void**)&plan[g].d_lami, plan[g].local_Bytes));
+    gpuErrchk(cudaMalloc((void**)&plan[g].d_z, plan[g].local_Bytes));
+
+    // Now we have to copy from host to the device memory we allocated
+    gpuErrchk(cudaMemcpy(plan[g].d_lamr, plan[g].h_lamr, plan[g].local_Bytes, cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(plan[g].d_lami, plan[g].h_lami, plan[g].local_Bytes, cudaMemcpyHostToDevice));
+    
+
+    int threads = 256;
+    int blocks = (plan[g].local_N + threads - 1) / threads;
+
+    //Now lets launch the kernel 
+
+    f<<<blocks,threads>>>(plan[g].d_z, plan[g].d_lamr, plan[g].d_lami, plan[g].local_N, Z.N);
+    gpuErrchk(cudaPeekAtLastError());
+    //Now let us add to the offset from before
+    current_y_offset = current_y_offset + plan[g].local_NY;
+    
+    gpuErrchk(cudaMemcpy(plan[g].h_z,plan[g].d_z,plan[g].local_Bytes,cudaMemcpyDeviceToHost));
+    
+    
+    
+    int zStartIndex = plan[g].yOffset * NX;
+    memcpy(Z.z + zStartIndex,
+       plan[g].h_z,
+       plan[g].local_Bytes);
+
+
+  }
   
-  // Malloc complex plane used to iterate the fcn on the device
-  // No need to copy anything here -- the plane's values will
-  // be generated on the device.
-  double *dz;
-  gpuErrchk( cudaMalloc((void**)&dz, NX*NY*sizeof(double)) );
-
-  // Call fcn running on GPUs to iterate map N times.
-  //printf("Calling f, [NBLK, NTHD] = [%d, %d], N = %d\n", NBLK, NTHD, Z.N);
-  f<<<NBLK,NTHD>>>(dz, dlamr, dlami, Z.N);
-  //gpuErrchk( cudaPeekAtLastError() );
-  //gpuErrchk( cudaDeviceSynchronize() );
-
-  // Copy dz back to host after iteration.
-  gpuErrchk( cudaMemcpy(Z.z, &(dz[0]), NX*NY*sizeof(double),
-                        cudaMemcpyDeviceToHost) );
-
   // Insert returned z values into imageData
   insertZIntoImageData(imageData, Z.z);
 
-  //To free up the memory in the GPU device
-  gpuErrchk(cudaFree(dlamr));
-  gpuErrchk(cudaFree(dlami));
-  gpuErrchk(cudaFree(dz));
+ for (int g = 0; g < GPU_N; g++) {
+    free(plan[g].h_lamr);
+    free(plan[g].h_lami);
+    free(plan[g].h_z);
 
+    gpuErrchk(cudaSetDevice(plan[g].deviceID));
+
+    gpuErrchk(cudaFree(plan[g].d_lamr));
+    gpuErrchk(cudaFree(plan[g].d_lami));
+    gpuErrchk(cudaFree(plan[g].d_z));
+}
   std::cout << " ... done!\n" << std::endl;
   return;
 }
@@ -636,21 +705,21 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
 //---------------------------------------------------------------
 // This fcn iterates a point in the complex plane.
 __global__
-void f(double *z, double *lamr, double *lami, int N) {
+void f(double *z, double *lamr, double *lami, int local_N, int N) {
 
   int tid = threadIdx.x + blockIdx.x * blockDim.x;
-  int ltid = threadIdx.x;   // my local index on this block.
-  int bid = blockIdx.x;
-  int i,j;
   int k;
+
+  //The if statement below workes as such,
+  // When Cuda launches its threads, they are launched in blocks,
+  //These blocks may not be multiples of our how many points on the graph we are computing,
+  // If we try to use these threads to do stuuff, they will cause problem, so this line just ends the function for those empty threads
+  if (tid >= local_N){
+    return;
+  }
   
-  // Figure out which lambda value to use based on my
-  // block and thread index values.
-  i = (int) tid/NX;
-  j = (int) tid%NX;
-  //printf("Entered f, N = %d, [i,j] = [%d, %d]\n", N, i, j);
-  thrust::complex<double> mylam(lamr[LINDEX(NY, NX, j, i)],
-				lami[LINDEX(NY, NX, j, i)]);
+
+  thrust::complex<double> mylam(lamr[tid],lami[tid]);
   //printf("mylam = [%f, %f]\n", mylam.real(), mylam.imag());
 
   // Modify this to choose between Mandelbrot and Logistic iteration.
@@ -668,7 +737,7 @@ void f(double *z, double *lamr, double *lami, int N) {
   }
 
   // Put count to escape into z.
-  z[LINDEX(NY, NX, j, i)] = (double) k;
+  z[tid] = (double) k;
 
 }
 
