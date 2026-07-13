@@ -436,7 +436,9 @@ int main(int argc, char* argv[])
     vtkSmartPointer<vtkLookupTable>::New();
   lookupTable->SetNumberOfTableValues(512);
   // I use sqrt just to get interesting colors
-  lookupTable->SetTableRange(0, sqrt(Z.N-1));  
+  //lookupTable->SetTableRange(0, sqrt(Z.N-1)); 
+  //version without the sqrt 
+  lookupTable->SetTableRange(0, Z.N);  
   //lookupTable->SetTableRange(0, log(Z.N-1));  
   lookupTable->SetAboveRangeColor(0.0, 0.0, 0.0, 1.0);
   lookupTable->SetNanColor(0.0, 0.0, 0.0, 1.0);
@@ -558,8 +560,7 @@ void insertZIntoImageData(vtkUniformGrid *imageData, double *z) {
   for (ix = 0; ix < NX; ix++) {
     for (iy = 0; iy < NY; iy++) {
       pixel = static_cast<double*>(imageData->GetScalarPointer(ix, iy, iz));
-      // Take sqrt to get interesting colors.  No other reason.
-      *pixel = sqrt(z[LINDEX(NY, NX, iy, ix)]);
+      *pixel = z[LINDEX(NY, NX, iy, ix)];
       //printf("z[%d,%d] = %f\n", ix, iy, *pixel);
     }
   }
@@ -725,6 +726,8 @@ void f(double *z, double *lamr, double *lami, int local_N, int N) {
 
   int tid = threadIdx.x + blockIdx.x * blockDim.x;
   int k;
+  //B is the break condition
+  const double B = 256.0;
 
   //The if statement below workes as such,
   // When Cuda launches its threads, they are launched in blocks,
@@ -741,19 +744,27 @@ void f(double *z, double *lamr, double *lami, int local_N, int N) {
   // Modify this to choose between Mandelbrot and Logistic iteration.
   //thrust::complex<double> x(0.5, 0.0);   // Logistic
   thrust::complex<double> x(0.0, 0.0);  // Mandelbrot
-
   // Do iteration.  If x escapes, then  break.
+  double mag2 = 0.0;
   for (k=0; k<N; k++) {
     //x = mylam*x*(1.0-x);  // Logistic
     x = x*x + mylam;    // Mandelbrot
+    mag2 = x.real()*x.real()+x.imag()*x.imag();
     //if ((x.real()*x.real() + x.imag()*x.imag()) > 4.0) {
-    if ((x.real()*x.real() + x.imag()*x.imag()) > 2.0) {
+    //if ((x.real()*x.real() + x.imag()*x.imag()) > 2) {
+    if ((mag2) > B*B) {
       break;
     }
   }
-
-  // Put count to escape into z.
-  z[tid] = (double) k;
+  
+  if(k==N){
+    z[tid]= 0.0;
+  } else{
+    // Put count to escape into z.
+    z[tid] = (double)k - log2(log2(mag2)) + 4.0;
+    //z[tid] = (double) k;
+  }
+  
 
 }
 
