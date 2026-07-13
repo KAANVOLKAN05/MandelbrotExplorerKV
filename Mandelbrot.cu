@@ -758,7 +758,7 @@ void f(double *z, double *lamr, double *lami, int local_N, int N) {
   }
   
   if(k==N){
-    z[tid]= 0.0;
+    z[tid]= 10000; //Just a very big number hopefully out of range which might give black, I will have to test
   } else{
     // Put count to escape into z.
     z[tid] = (double)k - log2(log2(mag2)) + 4.0;
