@@ -434,6 +434,32 @@ int main(int argc, char* argv[])
   // Play with these settings to alter the color map.
   vtkSmartPointer<vtkLookupTable> lookupTable =
     vtkSmartPointer<vtkLookupTable>::New();
+  //Used AI to copy the code from https://www.shadertoy.com/view/4df3Rn who has a great color pallate
+  const int numColors = 512;
+  const double colorRangeMax = 200.0;
+
+  lookupTable->SetNumberOfTableValues(numColors);
+  lookupTable->SetTableRange(0.0, colorRangeMax);
+
+  lookupTable->SetBelowRangeColor(0.0, 0.0, 0.0, 1.0);
+  lookupTable->UseBelowRangeColorOn();
+
+  lookupTable->UseAboveRangeColorOff();
+
+  for (int i = 0; i < numColors; i++) {
+      double sn = colorRangeMax * (double)i / (double)(numColors - 1);
+
+      // Similar idea to Inigo's palette:
+      // col = 0.5 + 0.5*cos(0.2*sn + vec3(2.7, 3.2, 3.7))
+      double r = 0.5 + 0.5 * cos(0.2 * sn + 2.7);
+      double g = 0.5 + 0.5 * cos(0.2 * sn + 3.2);
+      double b = 0.5 + 0.5 * cos(0.2 * sn + 3.7);
+
+      lookupTable->SetTableValue(i, r, g, b, 1.0);
+  }
+  lookupTable->Build();
+  /*
+  //Below is the old table setup
   lookupTable->SetNumberOfTableValues(512);
   // I use sqrt just to get interesting colors
   //lookupTable->SetTableRange(0, sqrt(Z.N-1)); 
@@ -449,7 +475,7 @@ int main(int argc, char* argv[])
   lookupTable->SetScaleToLinear();
   //lookupTable->SetScaleToSQRT();  
   lookupTable->Build();
-
+  */
   //----------------------------------------------------------------
   // Colorbar to show off color map
   vtkSmartPointer<vtkScalarBarActor> scalarBar =
@@ -758,7 +784,7 @@ void f(double *z, double *lamr, double *lami, int local_N, int N) {
   }
   
   if(k==N){
-    z[tid]= 10000; //Just a very big number hopefully out of range which might give black, I will have to test
+    z[tid]= -1.0; //this is set to be black
   } else{
     // Put count to escape into z.
     z[tid] = (double)k - log2(log2(mag2)) + 4.0;
