@@ -38,8 +38,8 @@
 #define LINDEX(Nr, Nc, r, c)  ((c) + (r)*(Nc))
 
 // Display window dimensions
-#define NX 5000
-#define NY 5000
+#define NX 2000
+#define NY 2000
 #define NY0 350
 
 // Values used to distribute the jobs amongst the GPUs.
