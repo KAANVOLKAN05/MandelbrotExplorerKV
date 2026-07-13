@@ -48,7 +48,7 @@
 #define NBLK ((NT-1)/NTHD + 1)
 
 // Default number of logistic map iterations.
-#define NITER 8
+#define NITER 300
 
 // Amount to grow/shrink when turning mouse wheel.
 #define SCALE 1.2
