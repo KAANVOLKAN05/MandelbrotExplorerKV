@@ -438,7 +438,7 @@ int main(int argc, char* argv[])
   // I use sqrt just to get interesting colors
   //lookupTable->SetTableRange(0, sqrt(Z.N-1)); 
   //version without the sqrt 
-  lookupTable->SetTableRange(0, 20);  
+  lookupTable->SetTableRange(0, 1);  
   //lookupTable->SetTableRange(0, log(Z.N-1));  
   lookupTable->SetAboveRangeColor(0.0, 0.0, 0.0, 1.0);
   lookupTable->SetNanColor(0.0, 0.0, 0.0, 1.0);
