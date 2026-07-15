@@ -464,7 +464,7 @@ int main(int argc, char* argv[])
   lookupTable->SetSaturationRange(1.0, 1.0);   // fully saturated
   lookupTable->SetValueRange(1.0, 1.0);        // bright
   lookupTable->SetAlphaRange(1.0, 1.0);
-  lookupTable->SetRampToLinear();
+  lookupTable->SetRampToSQRT();
   lookupTable->Build();
   /*
   //Below is the old table setup
