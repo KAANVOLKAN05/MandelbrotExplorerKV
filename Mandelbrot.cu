@@ -442,7 +442,7 @@ int main(int argc, char* argv[])
   lookupTable->SetNumberOfTableValues(numColors);
   lookupTable->SetTableRange(0.0, colorRangeMax);
 
-  lookupTable->SetBelowRangeColor(0.0, 0.0, 0.0, 1.0);
+  lookupTable->SetBelowRangeColor(1.0, 0.0, 0.0, 0.0);
   lookupTable->UseBelowRangeColorOn();
 
   lookupTable->UseAboveRangeColorOff();
