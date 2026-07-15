@@ -78,7 +78,7 @@ ComplexPlane Z;
 // Declare fcns computing the Mandelbrot set in the complex plane.
 void computeMandelbrot(vtkUniformGrid *imageData);
 __global__
-void f(double *z, double *lamr, double *lami, int local_N, int N);
+void f(double *z, double *mag2_out, double *lamr, double *lami, int local_N, int N);
 
 // Declare host-side graphics manipulation fcns.
 void moveZoom(int i, int j, double zoom);
