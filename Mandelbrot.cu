@@ -446,7 +446,7 @@ int main(int argc, char* argv[])
   lookupTable->UseBelowRangeColorOn();
 
   lookupTable->UseAboveRangeColorOff();
-/*
+
   for (int i = 0; i < numColors; i++) {
       double sn = colorRangeMax * (double)i / (double)(numColors - 1);
 
@@ -458,7 +458,8 @@ int main(int argc, char* argv[])
 
       lookupTable->SetTableValue(i, r, g, b, 1.0);
   }
-*/
+  lookupTable->Build();
+/*
   // Standard color map
   lookupTable->SetHueRange(0.0, 0.0);        // blue to red
   lookupTable->SetSaturationRange(1.0, 1.0);   // fully saturated
@@ -466,6 +467,7 @@ int main(int argc, char* argv[])
   lookupTable->SetAlphaRange(1.0, 1.0);
   lookupTable->SetRampToLinear();
   lookupTable->Build();
+*/
   /*
   //Below is the old table setup
   lookupTable->SetNumberOfTableValues(512);
