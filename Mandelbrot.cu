@@ -791,7 +791,7 @@ void f(double *z, double *mag2_out, double *lamr, double *lami, int local_N, int
     }
   }
   z[tid] = (double) k;
-  mag2[tid] = (double) mag2;
+  mag2[tid] =  mag2;
 
 }
 
