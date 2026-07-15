@@ -39,8 +39,8 @@
 #define LINDEX(Nr, Nc, r, c)  ((c) + (r)*(Nc))
 
 // Display window dimensions
-#define NX 2000
-#define NY 2000
+#define NX 800
+#define NY 800
 #define NY0 350
 
 // Values used to distribute the jobs amongst the GPUs.
@@ -446,7 +446,7 @@ int main(int argc, char* argv[])
   lookupTable->UseBelowRangeColorOn();
 
   lookupTable->UseAboveRangeColorOff();
-
+/*
   for (int i = 0; i < numColors; i++) {
       double sn = colorRangeMax * (double)i / (double)(numColors - 1);
 
@@ -458,6 +458,13 @@ int main(int argc, char* argv[])
 
       lookupTable->SetTableValue(i, r, g, b, 1.0);
   }
+*/
+  // Standard color map
+  lookupTable->SetHueRange(0.667, 0.0);        // blue to red
+  lookupTable->SetSaturationRange(1.0, 1.0);   // fully saturated
+  lookupTable->SetValueRange(1.0, 1.0);        // bright
+  lookupTable->SetAlphaRange(1.0, 1.0);
+  lookupTable->SetRampToLinear();
   lookupTable->Build();
   /*
   //Below is the old table setup
