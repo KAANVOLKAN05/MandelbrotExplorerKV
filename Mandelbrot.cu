@@ -448,7 +448,7 @@ int main(int argc, char* argv[])
   lookupTable->UseAboveRangeColorOff();
 
   for (int i = 0; i < numColors; i++) {
-      double sn = i / numColors
+      double sn = i / numColors;
 
       // Similar idea to Inigo's palette:
       // col = 0.5 + 0.5*cos(0.2*sn + vec3(2.7, 3.2, 3.7))
