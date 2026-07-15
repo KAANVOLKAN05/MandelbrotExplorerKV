@@ -437,7 +437,7 @@ int main(int argc, char* argv[])
     vtkSmartPointer<vtkLookupTable>::New();
   //Used AI to copy the code from https://www.shadertoy.com/view/4df3Rn who has a great color pallate
   const int numColors = 1000;
-  const double colorRangeMax = 300;
+  const double colorRangeMax = 1;
 
   lookupTable->SetNumberOfTableValues(numColors);
   lookupTable->SetTableRange(0.0, colorRangeMax);
@@ -453,7 +453,7 @@ int main(int argc, char* argv[])
       // Similar idea to Inigo's palette:
       // col = 0.5 + 0.5*cos(0.2*sn + vec3(2.7, 3.2, 3.7))
       double r = 0.8;
-      double g = 0.5 + 0.5 * cos(2.0*3.14*3.0*sn);
+      double g = 0.5 + 0.5 * cos(3.14*sn);
       double b = 1.0;
 
       lookupTable->SetTableValue(i, r, g, b, 1.0);
@@ -598,7 +598,6 @@ void insertZIntoImageData(vtkUniformGrid *imageData, double *z) {
     for (iy = 0; iy < NY; iy++) {
       pixel = static_cast<double*>(imageData->GetScalarPointer(ix, iy, iz));
       *pixel = z[LINDEX(NY, NX, iy, ix)];
-      printf("hi");
       //printf("z[%d,%d] = %f\n", ix, iy, *pixel);
     }
   }
