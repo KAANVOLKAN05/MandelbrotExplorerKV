@@ -598,7 +598,7 @@ void insertZIntoImageData(vtkUniformGrid *imageData, double *z) {
     for (iy = 0; iy < NY; iy++) {
       pixel = static_cast<double*>(imageData->GetScalarPointer(ix, iy, iz));
       *pixel = z[LINDEX(NY, NX, iy, ix)];
-      printf("hi")
+      printf("hi");
       //printf("z[%d,%d] = %f\n", ix, iy, *pixel);
     }
   }
