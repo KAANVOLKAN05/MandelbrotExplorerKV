@@ -437,7 +437,7 @@ int main(int argc, char* argv[])
     vtkSmartPointer<vtkLookupTable>::New();
   //Used AI to copy the code from https://www.shadertoy.com/view/4df3Rn who has a great color pallate
   const int numColors = 1024;
-  const double colorRangeMax = 20000.0;
+  const double colorRangeMax = Z.N;
 
   lookupTable->SetNumberOfTableValues(numColors);
   lookupTable->SetTableRange(0.0, colorRangeMax);
