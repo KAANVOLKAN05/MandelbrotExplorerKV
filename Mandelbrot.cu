@@ -19,6 +19,7 @@
 #include <complex>
 #include <vector>
 #include <array>
+#include <cmath>
 // This is for complex numbers under CUDA:
 #include <thrust/complex.h>
 
@@ -659,7 +660,7 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
     plan[g].h_lamr = nullptr;
     plan[g].h_lami = nullptr;
     plan[g].h_z    = nullptr;
-
+    plan[g].h_mag2    = nullptr;
     //plan[g].h_lamr = (double*) malloc(plan[g].local_Bytes);
     //plan[g].h_lami = (double*) malloc(plan[g].local_Bytes);
     //plan[g].h_z    = (double*) malloc(plan[g].local_Bytes);
@@ -667,7 +668,7 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
     gpuErrchk(cudaMallocHost((void**)&plan[g].h_lamr, plan[g].local_Bytes));
     gpuErrchk(cudaMallocHost((void**)&plan[g].h_lami, plan[g].local_Bytes));
     gpuErrchk(cudaMallocHost((void**)&plan[g].h_z,    plan[g].local_Bytes));
-
+    gpuErrchk(cudaMallocHost((void**)&plan[g].h_mag2, plan[g].local_Bytes));
     //Now lets fill the host memory we allocated
     int startIndex = plan[g].yOffset * NX;
 
@@ -679,6 +680,7 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
     plan[g].d_lamr = nullptr;
     plan[g].d_lami = nullptr;
     plan[g].d_z    = nullptr;
+    plan[g].d_mag2 = nullptr;
 
     //Now before allocating the memory on the GPU, lets select our device
     gpuErrchk(cudaSetDevice(plan[g].deviceID));
@@ -690,7 +692,7 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
     gpuErrchk(cudaMalloc((void**)&plan[g].d_lamr, plan[g].local_Bytes));
     gpuErrchk(cudaMalloc((void**)&plan[g].d_lami, plan[g].local_Bytes));
     gpuErrchk(cudaMalloc((void**)&plan[g].d_z, plan[g].local_Bytes));
-
+    gpuErrchk(cudaMalloc((void**)&plan[g].d_mag2, plan[g].local_Bytes));
     // Now we have to copy from host to the device memory we allocated
     gpuErrchk(cudaMemcpyAsync(plan[g].d_lamr, plan[g].h_lamr, plan[g].local_Bytes, cudaMemcpyHostToDevice));
     gpuErrchk(cudaMemcpyAsync(plan[g].d_lami, plan[g].h_lami, plan[g].local_Bytes, cudaMemcpyHostToDevice));
@@ -701,13 +703,13 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
 
     //Now lets launch the kernel 
 
-    f<<<blocks,threads, 0, plan[g].stream>>>(plan[g].d_z, plan[g].d_lamr, plan[g].d_lami, plan[g].local_N, Z.N);
+    f<<<blocks,threads, 0, plan[g].stream>>>(plan[g].d_z,plan[g].d_mag2, plan[g].d_lamr, plan[g].d_lami, plan[g].local_N, Z.N);
     gpuErrchk(cudaPeekAtLastError());
     //Now let us add to the offset from before
     current_y_offset = current_y_offset + plan[g].local_NY;
     
-    gpuErrchk(cudaMemcpyAsync(plan[g].h_z,plan[g].d_z,plan[g].local_Bytes,cudaMemcpyDeviceToHost));
-    
+    gpuErrchk(cudaMemcpyAsync(plan[g].h_z,plan[g].d_z,plan[g].local_Bytes,cudaMemcpyDeviceToHost, plan[g].stream));
+    gpuErrchk(cudaMemcpyAsync(plan[g].h_mag2,plan[g].d_mag2,plan[g].local_Bytes,cudaMemcpyDeviceToHost, plan[g].stream));
 
 
   }
@@ -718,9 +720,14 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
   for (int g = 0; g < GPU_N; g++) {
     int zStartIndex = plan[g].yOffset * NX;
 
-    memcpy(Z.z + zStartIndex,
-           plan[g].h_z,
-           plan[g].local_Bytes);
+    for (int i = 0; i < plan[g].local_N; i++) {
+      if ((int)plan[g].h_z[i] == Z.N) {
+        Z.z[zStartIndex + i] = -1.0;  // below-range black
+      } else {
+        Z.z[zStartIndex + i] =
+            plan[g].h_z[i] - log2(log2(plan[g].h_mag2[i])) + 4.0;
+      }
+    }
   }
   
   // Insert returned z values into imageData
@@ -738,6 +745,7 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
     gpuErrchk(cudaFreeHost(plan[g].h_lamr));
     gpuErrchk(cudaFreeHost(plan[g].h_lami));
     gpuErrchk(cudaFreeHost(plan[g].h_z));
+    gpuErrchk(cudaFreeHost(plan[g].h_mag2));
   }
   gpuErrchk(cudaFreeHost(lamr));
   gpuErrchk(cudaFreeHost(lami));
@@ -748,7 +756,7 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
 //---------------------------------------------------------------
 // This fcn iterates a point in the complex plane.
 __global__
-void f(double *z, double *lamr, double *lami, int local_N, int N) {
+void f(double *z, double *mag2_out, double *lamr, double *lami, int local_N, int N) {
 
   int tid = threadIdx.x + blockIdx.x * blockDim.x;
   int k;
@@ -782,15 +790,8 @@ void f(double *z, double *lamr, double *lami, int local_N, int N) {
       break;
     }
   }
-  
-  if(k==N){
-    z[tid]= -1.0; //this is set to be black
-  } else{
-    // Put count to escape into z.
-    z[tid] = (double)k - log2(log2(mag2)) + 4.0;
-    //z[tid] = (double) k;
-  }
-  
+  z[tid] = (double) k;
+  mag2[tid] = (double) mag2;
 
 }
 

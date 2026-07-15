@@ -1,5 +1,5 @@
-#ifndef SIMPLEMULTIGPU_H
-#define SIMPLEMULTIGPU_H
+#ifndef MULTIGPU_H
+#define MULTIGPU_H
 #include <cuda_runtime.h>
 #include <cstddef>
 
@@ -35,7 +35,9 @@ typedef struct
 
     // Result arrays
     double *h_z;        // Result to copy from an individual GPU
+    double *h_mag2      //Secondary Results to copy from an individual GPU
     double *d_z;        // Result written on the GPU
+    double *d_mag2      // Secondary Results to write on the GPU
 
     // CUDA stream for this GPU's queued work
     cudaStream_t stream;
