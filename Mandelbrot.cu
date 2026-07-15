@@ -453,12 +453,13 @@ int main(int argc, char* argv[])
       // Similar idea to Inigo's palette:
       // col = 0.5 + 0.5*cos(0.2*sn + vec3(2.7, 3.2, 3.7))
       double r = 0.8;
-      double g = cos(sn);
+      double g = cos(100*sn);
       double b = 1.0;
 
       lookupTable->SetTableValue(i, r, g, b, 1.0);
   }
   lookupTable->Build();
+
 /*
   // Standard color map
   lookupTable->SetHueRange(0.0, 0.0);        // blue to red
