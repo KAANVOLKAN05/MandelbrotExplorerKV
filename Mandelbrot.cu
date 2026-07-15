@@ -731,7 +731,7 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
       if ((int)plan[g].h_z[i] == Z.N) {
         Z.z[zStartIndex + i] = -1.0;  // below-range black
       } else {
-        Z.z[zStartIndex + i] = plan[g].h_z[i] ;//- log2(log2(plan[g].h_mag2[i])) + 4.0;
+        Z.z[zStartIndex + i] = plan[g].h_z[i] - log2(log2(plan[g].h_mag2[i])) + 4.0;
       }
     }
   }
