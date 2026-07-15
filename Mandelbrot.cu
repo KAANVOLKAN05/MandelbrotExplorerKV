@@ -436,8 +436,8 @@ int main(int argc, char* argv[])
   vtkSmartPointer<vtkLookupTable> lookupTable =
     vtkSmartPointer<vtkLookupTable>::New();
   //Used AI to copy the code from https://www.shadertoy.com/view/4df3Rn who has a great color pallate
-  const int numColors = Z.N;
-  const double colorRangeMax = 100;
+  const int numColors = 1000;
+  const double colorRangeMax = 300;
 
   lookupTable->SetNumberOfTableValues(numColors);
   lookupTable->SetTableRange(0.0, colorRangeMax);
@@ -447,8 +447,8 @@ int main(int argc, char* argv[])
 
   lookupTable->UseAboveRangeColorOff();
 
-  for (int i = 0; i < 300; i++) {
-      double sn = (double)i / (double)(300 - 1);
+  for (int i = 0; i < numColors; i++) {
+      double sn = (double)i / (double)(numColors - 1);
 
       // Similar idea to Inigo's palette:
       // col = 0.5 + 0.5*cos(0.2*sn + vec3(2.7, 3.2, 3.7))
