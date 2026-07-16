@@ -75,7 +75,7 @@ typedef struct {
                   // I malloc the storage later, in main().
 } ComplexPlane;
 ComplexPlane Z;
-
+int requestedGPU = 1;
 
 //-----------------------------------------------------------------
 // Declare fcns computing the Mandelbrot set in the complex plane.
@@ -384,7 +384,7 @@ int main(int argc, char* argv[])
      {"w",  required_argument, 0, 'w'},
      {"h",  required_argument, 0, 'h'},
      {"N",  required_argument, 0, 'N'},
-     {"gpus",  required_argument, 0, 'G'}       
+     {"gpus",  required_argument, 0, 'G'},       
      {0, 0, 0, 0}
     };
   /* getopt_long stores the option index here. */
@@ -417,11 +417,11 @@ int main(int argc, char* argv[])
     case 'G':
       requestedGPU = atoi(optarg);
       if (requestedGPU < 0){
-        std::cout << "You can not request less then 0 GPUs"<<;
+        std::cout << "You can not request less then 0 GPUs\n";
         return 1;
       }
       if (requestedGPU >= MAX_GPUS){
-        std::cout << "Requested GPU count is too many, max is set to 64" >>;
+        std::cout << "Requested GPU count is too many, max is set to 64\n";
         return 1;
       }
 
