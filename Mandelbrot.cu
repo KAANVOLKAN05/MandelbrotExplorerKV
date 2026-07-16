@@ -624,18 +624,12 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
   //-------------------------------------------------------------------
   // Now set up CUDA stuff
 
-
-
-  // Create a plans array to hold the plans for each of the GPUs. 
-  //TGPUplan is defined under the header file.
-  TGPUplan plan[8];
-
-
-
   // First we check how many GPUs we have in the system
   int GPU_N;
+  
   gpuErrchk(cudaGetDeviceCount(&GPU_N));
   std::cout << "We have " << GPU_N << " GPU devices" << std::endl;
+  TGPUplan plan[GPU_N]; //TGPUplan is defined under the header file.
 
   // Make local lambda plane
   for (ix = 0; ix < NX; ix++) {
