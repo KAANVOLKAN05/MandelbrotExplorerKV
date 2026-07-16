@@ -48,6 +48,9 @@
 #define NTHD MIN(NT, 1024)
 #define NBLK ((NT-1)/NTHD + 1)
 
+//Maximum number of GPUs the user can specify
+#define MAX_GPUS 64
+
 // Default number of logistic map iterations.
 #define NITER 300
 
@@ -380,13 +383,14 @@ int main(int argc, char* argv[])
      {"y",  required_argument, 0, 'y'},
      {"w",  required_argument, 0, 'w'},
      {"h",  required_argument, 0, 'h'},
-     {"N",  required_argument, 0, 'N'},       
+     {"N",  required_argument, 0, 'N'},
+     {"gpus",  required_argument, 0, 'G'}       
      {0, 0, 0, 0}
     };
   /* getopt_long stores the option index here. */
   int option_index = 0;
   while (1) {
-    c = getopt_long (argc, argv, "x:y:w:h:N:", long_options, &option_index);
+    c = getopt_long (argc, argv, "x:y:w:h:N:G:", long_options, &option_index);
     //std::cout << "c = " << c << std::endl;
     if (c == -1) break;
     switch (c) {
@@ -410,7 +414,18 @@ int main(int argc, char* argv[])
       Z.N = atoi(optarg);
       //std::cout << "N = " << N << std::endl;            
       break;
-    case '?':
+    case 'G':
+      requestedGPU = atoi(optarg);
+      if (requestedGPU < 0){
+        std::cout << "You can not request less then 0 GPUs"<<;
+        return 1;
+      }
+      if (requestedGPU >= MAX_GPUS){
+        std::cout << "Requested GPU count is too many, max is set to 64" >>;
+        return 1;
+      }
+
+      break;
       fprintf (stderr,
                "Unknown option character 0x%x'.\n",
                optopt);
@@ -624,10 +639,26 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
   //-------------------------------------------------------------------
   // Now set up CUDA stuff
 
-  // First we check how many GPUs we have in the system
-  int GPU_N;
-  
-  gpuErrchk(cudaGetDeviceCount(&GPU_N));
+  //Lets see how many GPUs we have
+  int availableGPUCount = 0;
+  int GPU_N ;
+  gpuErrchk(cudaGetDeviceCount(&availableGPUCount));
+
+  if (requestedGPUCount == 0) {
+    GPU_N = availableGPUCount;
+    std::cout << "We have" << GPU_N << " GPU devices and we are using all" << std::endl;
+  } else {
+    
+    GPU_N = requestedGPUCount;
+    std::cout << "We are suing" << availableGPUCount << " GPU devices and we are using"<< GPU_N<< std::endl;
+  }
+  if(requestedGPU > availableGPUCount){
+    std::cout<<"Requested more GPUs then requested"<<;
+    exit(EXIT_FAILURE);
+  }
+
+
+
   std::cout << "We have " << GPU_N << " GPU devices" << std::endl;
   TGPUplan plan[GPU_N]; //TGPUplan is defined under the header file.
 
