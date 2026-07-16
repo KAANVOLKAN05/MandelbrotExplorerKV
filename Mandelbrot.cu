@@ -75,7 +75,7 @@ typedef struct {
                   // I malloc the storage later, in main().
 } ComplexPlane;
 ComplexPlane Z;
-int requestedGPUCount = 1;
+int requestedGPUCount = 0;
 
 //-----------------------------------------------------------------
 // Declare fcns computing the Mandelbrot set in the complex plane.
@@ -650,7 +650,7 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
   } else {
     
     GPU_N = requestedGPUCount;
-    std::cout << "We are suing" << availableGPUCount << " GPU devices and we are using"<< GPU_N<< std::endl;
+    std::cout << "We have" << availableGPUCount << " GPU devices and we are using"<< GPU_N<< std::endl;
   }
   if(requestedGPUCount > availableGPUCount){
     std::cout<<"Requested more GPUs then requested\n";
