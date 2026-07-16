@@ -653,7 +653,7 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
     std::cout << "We are suing" << availableGPUCount << " GPU devices and we are using"<< GPU_N<< std::endl;
   }
   if(requestedGPUCount > availableGPUCount){
-    std::cout<<"Requested more GPUs then requested"<<;
+    std::cout<<"Requested more GPUs then requested\n";
     exit(EXIT_FAILURE);
   }
 
