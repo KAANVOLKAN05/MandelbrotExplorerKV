@@ -80,7 +80,7 @@ int requestedGPUCount = 0;
 //-----------------------------------------------------------------
 // Declare fcns computing the Mandelbrot set in the complex plane.
 void computeMandelbrot(vtkUniformGrid *imageData);
-void updateColorTable()
+void updateColorTable();
 __global__
 void f(double *z, double *mag2_out, double *lamr, double *lami, int local_N, int N);
 
