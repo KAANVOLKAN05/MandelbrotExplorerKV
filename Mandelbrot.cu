@@ -515,7 +515,7 @@ int main(int argc, char* argv[])
   lookupTable->Build();
   
   //----------------------------------------------------------------
-  
+  */
   // Colorbar to show off color map
   vtkSmartPointer<vtkScalarBarActor> scalarBar =
     vtkSmartPointer<vtkScalarBarActor>::New();
@@ -524,7 +524,7 @@ int main(int argc, char* argv[])
   scalarBar->GetLabelTextProperty()->SetColor(0,0,1);
   scalarBar->GetTitleTextProperty()->SetColor(0,0,1);
   scalarBar->SetMaximumNumberOfColors(512);
-  */
+
 
 
   
