@@ -118,6 +118,7 @@ MY_CREATE(vtkRenderer, renderer);
 MY_CREATE(vtkCamera, camera);
 MY_CREATE(vtkRenderWindow, renWin);
 MY_CREATE(vtkRenderWindowInteractor, iren);
+MY_CREATE(vtkLookupTable, lookupTable);
 
 
 //------------------------------------------------------------------
@@ -280,7 +281,7 @@ void moveZoom(int i, int j, double zoom) {
   
   // Now compute Mandelbrot set using new origin and spacing.
   computeMandelbrot(rImageData);  // Compute the whole set.
-
+  updateColorTable();
   return;
 }
 
@@ -336,6 +337,7 @@ void moveTranslate(vtkVector<int, 4> p) {
   
   // Now compute Mandelbrot set using new origin
   computeMandelbrot(rImageData);  // Compute the whole set.
+  updateColorTable();
   
   return;
 }
@@ -447,13 +449,20 @@ int main(int argc, char* argv[])
   
   //--------------------------------------------------------------------
 
-  // Map the scalar values in the image to colors with a lookup table
-  // Play with these settings to alter the color map.
-  vtkSmartPointer<vtkLookupTable> lookupTable =
-    vtkSmartPointer<vtkLookupTable>::New();
-  //Used AI to copy the code from https://www.shadertoy.com/view/4df3Rn who has a great color pallate
+
   const int numColors = 1000;
-  const double colorRangeMax = 100 *3.14;
+  lookupTable->SetNumberOfTableValues(numColors);
+  lookupTable->SetTableRange(0.0, static_cast<double>(Z.N));
+  lookupTable->SetScaleToLinear();
+  lookupTable->Build();
+
+  lookupTable->SetBelowRangeColor(0.0, 0.0, 0.0, 1.0);
+  lookupTable->UseBelowRangeColorOn();
+
+  lookupTable->SetAboveRangeColor(0.0, 0.0, 0.0, 1.0);
+  lookupTable->UseAboveRangeColorOn();
+
+  lookupTable->SetNanColor(0.0, 0.0, 0.0, 1.0);
 
   //lookupTable->SetNumberOfTableValues(numColors);
   //lookupTable->SetTableRange(0.0, colorRangeMax);
@@ -484,7 +493,7 @@ int main(int argc, char* argv[])
   lookupTable->SetAlphaRange(1.0, 1.0);
   lookupTable->SetRampToLinear();
   lookupTable->Build();
-*/
+
   
   //Below is the old table setup
   //lookupTable->SetNumberOfTableValues(512);
@@ -506,6 +515,7 @@ int main(int argc, char* argv[])
   lookupTable->Build();
   
   //----------------------------------------------------------------
+  
   // Colorbar to show off color map
   vtkSmartPointer<vtkScalarBarActor> scalarBar =
     vtkSmartPointer<vtkScalarBarActor>::New();
@@ -514,6 +524,7 @@ int main(int argc, char* argv[])
   scalarBar->GetLabelTextProperty()->SetColor(0,0,1);
   scalarBar->GetTitleTextProperty()->SetColor(0,0,1);
   scalarBar->SetMaximumNumberOfColors(512);
+  */
 
 
   
@@ -553,6 +564,7 @@ int main(int argc, char* argv[])
   // Compute initial Mandelbrot for display
   std::cout << "Compute initial Mandelbrot ... " << endl;  
   computeMandelbrot(rImageData);  // Compute the whole set.
+  updateColorTable();
   
   // Configure image actor.  Actor has built-in mapper.
   std::cout << "Configure image actor ... " << endl;    
@@ -619,6 +631,7 @@ void insertZIntoImageData(vtkUniformGrid *imageData, double *z) {
       //printf("z[%d,%d] = %f\n", ix, iy, *pixel);
     }
   }
+  imageData->Modified();
 }
 
 
