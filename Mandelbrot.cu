@@ -461,7 +461,7 @@ int main(int argc, char* argv[])
   lookupTable->UseBelowRangeColorOn();
 
   lookupTable->UseAboveRangeColorOff();
-
+/*
   for (int i = 0; i < numColors; i++) {
       double sn = (double)i / (double)(numColors - 1);
 
@@ -474,7 +474,7 @@ int main(int argc, char* argv[])
       lookupTable->SetTableValue(i, r, g, b, 1.0);
   }
   lookupTable->Build();
-
+*/
 /*
   // Standard color map
   lookupTable->SetHueRange(0.0, 0.0);        // blue to red
@@ -484,7 +484,7 @@ int main(int argc, char* argv[])
   lookupTable->SetRampToLinear();
   lookupTable->Build();
 */
-  /*
+  
   //Below is the old table setup
   lookupTable->SetNumberOfTableValues(512);
   // I use sqrt just to get interesting colors
@@ -501,7 +501,7 @@ int main(int argc, char* argv[])
   lookupTable->SetScaleToLinear();
   //lookupTable->SetScaleToSQRT();  
   lookupTable->Build();
-  */
+  
   //----------------------------------------------------------------
   // Colorbar to show off color map
   vtkSmartPointer<vtkScalarBarActor> scalarBar =
