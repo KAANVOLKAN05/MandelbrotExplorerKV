@@ -277,7 +277,7 @@ void moveZoom(int i, int j, double zoom) {
 
   const double zoomDepth = std::max(0.0, std::log2(initialWidth / Z.w));
 
-  Z.N = NITER + static_cast<int>(50.0 * zoomDepth)
+  Z.N = NITER + static_cast<int>(50.0 * zoomDepth);
   
   // Now that I have an updated Z, must update ImageData
   rImageData->AllocateScalars(VTK_DOUBLE, 1);
