@@ -43,6 +43,12 @@
 #define NY 1000
 #define NY0 350
 
+// Color Values
+
+#define numColors 1000
+#define colorRangeMax 300
+
+
 // Values used to distribute the jobs amongst the GPUs.
 #define NT NX*NY
 #define NTHD MIN(NT, 1024)
@@ -452,9 +458,7 @@ int main(int argc, char* argv[])
   // Play with these settings to alter the color map.
   vtkSmartPointer<vtkLookupTable> lookupTable =
     vtkSmartPointer<vtkLookupTable>::New();
-  //Used AI to copy the code from https://www.shadertoy.com/view/4df3Rn who has a great color pallate
-  const int numColors = 1000;
-  const double colorRangeMax = 300;
+
 
   lookupTable->SetNumberOfTableValues(numColors);
   lookupTable->SetTableRange(0.0, colorRangeMax);
