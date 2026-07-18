@@ -815,8 +815,7 @@ void updateColorTable()
     const double zoo = Z.w / 2.0;
 
     // His zoom-based color normalization.
-    const double nor =
-        std::max(1.0, 1.0 + std::log2(1.0 / zoo));
+    const double nor = std::max(1.0, 1.0 + (1.0 / zoo));
 
     lookupTable->SetNumberOfTableValues(numColors);
     lookupTable->SetTableRange(0.0, colorRangeMax);
