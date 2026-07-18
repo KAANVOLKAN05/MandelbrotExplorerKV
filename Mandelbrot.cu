@@ -280,6 +280,7 @@ void moveZoom(int i, int j, double zoom) {
   rImageData->AllocateScalars(VTK_DOUBLE, 1);
   
   // Now compute Mandelbrot set using new origin and spacing.
+  Z.N = NITER + static_cast<int>(50.0 / Z.w); //Added increasing iteration count
   computeMandelbrot(rImageData);  // Compute the whole set.
   updateColorTable();
   return;
@@ -810,14 +811,7 @@ void updateColorTable()
     const int numColors = 4096;
     const double colorRangeMax = static_cast<double>(Z.N);
 
-    /*
-       In Inigo's shader:
 
-           c = center + zoo * p
-
-       For a square image, p spans approximately -1 to +1,
-       so the displayed width is approximately 2*zoo.
-    */
     const double zoo = Z.w / 2.0;
 
     // His zoom-based color normalization.
@@ -830,10 +824,7 @@ void updateColorTable()
     lookupTable->Build();
 
     for (int i = 0; i < numColors; ++i) {
-        const double sn =
-            colorRangeMax *
-            static_cast<double>(i) /
-            static_cast<double>(numColors - 1);
+        const double sn = colorRangeMax * static_cast<double>(i) / static_cast<double>(numColors - 1);
 
         const double phase = 0.2 * sn / nor;
 
