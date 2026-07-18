@@ -80,6 +80,7 @@ int requestedGPUCount = 0;
 //-----------------------------------------------------------------
 // Declare fcns computing the Mandelbrot set in the complex plane.
 void computeMandelbrot(vtkUniformGrid *imageData);
+void updateColorTable()
 __global__
 void f(double *z, double *mag2_out, double *lamr, double *lami, int local_N, int N);
 
@@ -454,13 +455,13 @@ int main(int argc, char* argv[])
   const int numColors = 1000;
   const double colorRangeMax = 100 *3.14;
 
-  lookupTable->SetNumberOfTableValues(numColors);
-  lookupTable->SetTableRange(0.0, colorRangeMax);
+  //lookupTable->SetNumberOfTableValues(numColors);
+  //lookupTable->SetTableRange(0.0, colorRangeMax);
 
-  lookupTable->SetBelowRangeColor(1.0, 0.0, 0.0, 0.0);
-  lookupTable->UseBelowRangeColorOn();
+  //lookupTable->SetBelowRangeColor(1.0, 0.0, 0.0, 0.0);
+  //lookupTable->UseBelowRangeColorOn();
 
-  lookupTable->UseAboveRangeColorOff();
+  //lookupTable->UseAboveRangeColorOff();
 /*
   for (int i = 0; i < numColors; i++) {
       double sn = (double)i / (double)(numColors - 1);
@@ -486,11 +487,13 @@ int main(int argc, char* argv[])
 */
   
   //Below is the old table setup
-  lookupTable->SetNumberOfTableValues(512);
+  //lookupTable->SetNumberOfTableValues(512);
   // I use sqrt just to get interesting colors
   //lookupTable->SetTableRange(0, sqrt(Z.N-1)); 
   //version without the sqrt 
-  lookupTable->SetTableRange(0, 30);  
+  //lookupTable->SetTableRange(0, 300);  
+  lookupTable->SetNumberOfTableValues(numColors);
+  lookupTable->SetTableRange(0.0, colorRangeMax);
   //lookupTable->SetTableRange(0, log(Z.N-1));  
   lookupTable->SetAboveRangeColor(0.0, 0.0, 0.0, 1.0);
   lookupTable->SetNanColor(0.0, 0.0, 0.0, 1.0);
@@ -787,6 +790,43 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
   return;
 }
 
+
+//This is the function which itterates the color map
+void updateColorTable(){
+  int numColors = 1000;
+  double colorRangeMax = 1.0;
+  for(int i = 0; i < NX * NY; i++){
+    if(Z.z[i] > colorRangeMax){
+      colorRangeMax = Z.z[i];
+    }
+  }
+  lookupTable->SetNumberOfTableValues(numColors);
+  lookupTable->SetTableRange(0.0, colorRangeMax);
+  lookupTable->SetScaleToLinear();
+  lookupTable->Build();
+
+  const double nor = 1.0; //This will be later made into a dynamic number
+
+  for (int i = 0; i < numColors; ++i) {
+    const double sn = colorRangeMax * static_cast<double>(i) / static_cast<double>(numColors - 1); // Indexes the colors
+
+    const double phase = 0.2 * sn / nor;
+
+    const double r =  0.5 + 0.5 * std::cos(phase + 2.7);
+    const double g =  0.5 + 0.5 * std::cos(phase + 3.2);
+    const double b =  0.5 + 0.5 * std::cos(phase + 3.7);
+
+    lookupTable->SetTableValue(i, r, g, b, 1.0);
+  }
+  lookupTable->SetBelowRangeColor(0.0, 0.0, 0.0, 1.0);
+  lookupTable->UseBelowRangeColorOn();
+  lookupTable->Build();
+
+  std::cout << "Color range: 0 to " << colorRangeMax << std::endl;
+
+
+
+}
 //---------------------------------------------------------------
 // This fcn iterates a point in the complex plane.
 __global__
