@@ -274,7 +274,7 @@ void moveZoom(int i, int j, double zoom) {
   //printf("New dx = %e, dy = %e\n", Z.dx, Z.dy);
   printf("New xc = %e, yc = %e\n", Z.xc, Z.yc);
 
-  Z.N = NITER + (10/Z.w);
+  Z.N = NITER + static_cast<int>(10.0 / Z.w);
   
   // Now that I have an updated Z, must update ImageData
   rImageData->AllocateScalars(VTK_DOUBLE, 1);
@@ -454,7 +454,7 @@ int main(int argc, char* argv[])
     vtkSmartPointer<vtkLookupTable>::New();
   //Used AI to copy the code from https://www.shadertoy.com/view/4df3Rn who has a great color pallate
   const int numColors = 1000;
-  const double colorRangeMax = 100 *3.14;
+  const double colorRangeMax = 300;
 
   lookupTable->SetNumberOfTableValues(numColors);
   lookupTable->SetTableRange(0.0, colorRangeMax);
@@ -761,7 +761,8 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
       if ((int)plan[g].h_z[i] == Z.N) {
         Z.z[zStartIndex + i] = -1.0;  // below-range black
       } else {
-        Z.z[zStartIndex + i] = plan[g].h_z[i] - log2(log2(plan[g].h_mag2[i])) + 4.0;
+        double smooth = plan[g].h_z[i] - log2(log2(plan[g].h_mag2[i])) + 4.0;
+        Z.z[zStartIndex + i] = std::fmod(smooth, colorRangeMax);
       }
     }
   }
