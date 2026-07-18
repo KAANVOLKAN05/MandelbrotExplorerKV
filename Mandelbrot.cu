@@ -281,7 +281,7 @@ void moveZoom(int i, int j, double zoom) {
   printf("New xc = %e, yc = %e\n", Z.xc, Z.yc);
 
   Z.N = NITER + static_cast<int>(10.0 / Z.w);
-  printf("New iteration number is %e\n", Z.N);
+  printf("New iteration number is %d\n", Z.N);
   
   // Now that I have an updated Z, must update ImageData
   rImageData->AllocateScalars(VTK_DOUBLE, 1);
