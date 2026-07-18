@@ -39,8 +39,8 @@
 #define LINDEX(Nr, Nc, r, c)  ((c) + (r)*(Nc))
 
 // Display window dimensions
-#define NX 1000
-#define NY 1000
+#define NX 400
+#define NY 400
 #define NY0 350
 
 // Color Values
@@ -281,6 +281,7 @@ void moveZoom(int i, int j, double zoom) {
   printf("New xc = %e, yc = %e\n", Z.xc, Z.yc);
 
   Z.N = NITER + static_cast<int>(10.0 / Z.w);
+  printf("New iteration number is %e\n", Z.N);
   
   // Now that I have an updated Z, must update ImageData
   rImageData->AllocateScalars(VTK_DOUBLE, 1);
@@ -496,7 +497,7 @@ int main(int argc, char* argv[])
   // I use sqrt just to get interesting colors
   //lookupTable->SetTableRange(0, sqrt(Z.N-1)); 
   //version without the sqrt 
-  lookupTable->SetTableRange(0, 30);  
+  lookupTable->SetTableRange(0, colorRangeMax);  
   //lookupTable->SetTableRange(0, log(Z.N-1));  
   lookupTable->SetAboveRangeColor(0.0, 0.0, 0.0, 1.0);
   lookupTable->SetNanColor(0.0, 0.0, 0.0, 1.0);
