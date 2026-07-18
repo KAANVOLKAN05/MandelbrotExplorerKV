@@ -14,6 +14,7 @@
 #include <vtkTextProperty.h>
 #include <vtkVector.h>
 #include <vtkCamera.h>
+#include <vtkImageResize.h>
 #include <iostream>
 #include <cstring>
 #include <complex>
@@ -39,9 +40,10 @@
 #define LINDEX(Nr, Nc, r, c)  ((c) + (r)*(Nc))
 
 // Display window dimensions
-#define NX 400
-#define NY 400
-#define NY0 350
+#define NX (2 * DISPLAY_NX)
+#define NY (2 * DISPLAY_NY)
+#define DISPLAY_NX 400
+#define DISPLAY_NY 400
 
 // Color Values
 
@@ -123,6 +125,7 @@ MY_CREATE(vtkRenderer, renderer);
 MY_CREATE(vtkCamera, camera);
 MY_CREATE(vtkRenderWindow, renWin);
 MY_CREATE(vtkRenderWindowInteractor, iren);
+MY_CREATE(vtkImageResize, downsampleImage);
 
 
 //------------------------------------------------------------------
@@ -359,8 +362,8 @@ void MapIndexToPhysicalPoint(int i, int j, int k, double xyz[3])
   double alphax, alphay;
   double x, y, z;
   
-  alphax = static_cast<double>(i)/static_cast<double>(NX);
-  alphay = static_cast<double>(j)/static_cast<double>(NY);  
+  alphax = static_cast<double>(i)/static_cast<double>(DISPLAY_NX);
+  alphay = static_cast<double>(j)/static_cast<double>(DISPLAY_NY);  
   z = 0.0;
   
   xyz[0] = alphax; // x;
@@ -461,8 +464,6 @@ int main(int argc, char* argv[])
     vtkSmartPointer<vtkLookupTable>::New();
 
 
-  lookupTable->SetNumberOfTableValues(numColors);
-  lookupTable->SetTableRange(0.0, colorRangeMax);
 
   lookupTable->SetBelowRangeColor(1.0, 0.0, 0.0, 0.0);
   lookupTable->UseBelowRangeColorOn();
@@ -502,7 +503,7 @@ int main(int argc, char* argv[])
   lookupTable->SetAboveRangeColor(0.0, 0.0, 0.0, 1.0);
   lookupTable->SetNanColor(0.0, 0.0, 0.0, 1.0);
   //lookupTable->SetRampToLinear();
-  lookupTable->SetRampToSQRT();
+  //lookupTable->SetRampToSQRT();
   //lookupTable->SetRampToSCurve();
   //lookupTable->SetScaleToLog10();
   lookupTable->SetScaleToLinear();
@@ -535,6 +536,10 @@ int main(int argc, char* argv[])
   colorComplexPlane->SetLookupTable(lookupTable);
   colorComplexPlane->PassAlphaToOutputOn();
   colorComplexPlane->SetInputData(rImageData);  // set to real or imag plane
+  downsampleImage->SetInputConnection(colorComplexPlane->GetOutputPort());
+  downsampleImage->SetResizeMethodToOutputDimensions();
+  downsampleImage->SetOutputDimensions(DISPLAY_NX,DISPLAY_NY,1);
+  downsampleImage->InterpolateOn();
 
   // Configure initial ImageData
   std::cout << "Configure colorComplexPlane ... " << endl;
@@ -561,8 +566,8 @@ int main(int argc, char* argv[])
   // Configure image actor.  Actor has built-in mapper.
   std::cout << "Configure image actor ... " << endl;    
   imageActor->InterpolateOff();
-  imageActor->GetMapper()->SetInputConnection(colorComplexPlane->GetOutputPort());
-  
+  //imageActor->GetMapper()->SetInputConnection(colorComplexPlane->GetOutputPort());
+  imageActor->GetMapper()->SetInputConnection(downsampleImage->GetOutputPort());
   // Configure renderer
   std::cout << "Configure renderer ..." << endl;
   renderer->AddActor(imageActor);
@@ -577,7 +582,7 @@ int main(int argc, char* argv[])
   // Configure render window
   std::cout << "Configure render window ..." << endl;
   renWin->AddRenderer(renderer);
-  renWin->SetSize(NX, NY); // set window size in pixels
+  renWin->SetSize(DISPLAY_NX, DISPLAY_NY); 
   renWin->SetWindowName("Mandelbrot set in complex plane");
             
   // Configure interactor and interactor style
