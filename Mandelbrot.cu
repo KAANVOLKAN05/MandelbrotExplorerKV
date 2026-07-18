@@ -40,15 +40,15 @@
 #define LINDEX(Nr, Nc, r, c)  ((c) + (r)*(Nc))
 
 // Display window dimensions
-#define NX (2 * DISPLAY_NX)
-#define NY (2 * DISPLAY_NY)
-#define DISPLAY_NX 400
-#define DISPLAY_NY 400
+#define NX (4 * DISPLAY_NX)
+#define NY (4 * DISPLAY_NY)
+#define DISPLAY_NX 600
+#define DISPLAY_NY 600
 
 // Color Values
 
 #define numColors 1000
-#define colorRangeMax 300
+#define colorRangeMax 500
 
 
 // Values used to distribute the jobs amongst the GPUs.
