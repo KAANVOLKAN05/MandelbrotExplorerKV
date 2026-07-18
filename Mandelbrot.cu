@@ -805,6 +805,62 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
 
 
 //This is the function which itterates the color map
+void updateColorTable()
+{
+    const int numColors = 4096;
+    const double colorRangeMax = static_cast<double>(Z.N);
+
+    /*
+       In Inigo's shader:
+
+           c = center + zoo * p
+
+       For a square image, p spans approximately -1 to +1,
+       so the displayed width is approximately 2*zoo.
+    */
+    const double zoo = Z.w / 2.0;
+
+    // His zoom-based color normalization.
+    const double nor =
+        std::max(1.0, 1.0 + std::log2(1.0 / zoo));
+
+    lookupTable->SetNumberOfTableValues(numColors);
+    lookupTable->SetTableRange(0.0, colorRangeMax);
+    lookupTable->SetScaleToLinear();
+    lookupTable->Build();
+
+    for (int i = 0; i < numColors; ++i) {
+        const double sn =
+            colorRangeMax *
+            static_cast<double>(i) /
+            static_cast<double>(numColors - 1);
+
+        const double phase = 0.2 * sn / nor;
+
+        const double r =
+            0.5 + 0.5 * std::cos(phase + 2.7);
+
+        const double g =
+            0.5 + 0.5 * std::cos(phase + 3.2);
+
+        const double b =
+            0.5 + 0.5 * std::cos(phase + 3.7);
+
+        lookupTable->SetTableValue(i, r, g, b, 1.0);
+    }
+
+    // Your interior Mandelbrot values are stored as -1.
+    lookupTable->SetBelowRangeColor(0.0, 0.0, 0.0, 1.0);
+    lookupTable->UseBelowRangeColorOn();
+
+    std::cout
+        << "Color range: 0 to " << colorRangeMax
+        << ", width: " << Z.w
+        << ", zoo: " << zoo
+        << ", nor: " << nor
+        << std::endl;
+}
+/*
 void updateColorTable(){
   int numColors = 1000;
   double colorRangeMax = 1.0;
@@ -840,6 +896,7 @@ void updateColorTable(){
 
 
 }
+*/
 //---------------------------------------------------------------
 // This fcn iterates a point in the complex plane.
 __global__
