@@ -284,6 +284,7 @@ void moveZoom(int i, int j, double zoom) {
   printf("New xc = %e, yc = %e\n", Z.xc, Z.yc);
 
   Z.N = Z.N + static_cast<int>(50 * std::log(10.0 / Z.w));
+  printf("New zoom number is %d\n", Z.w);
   printf("New iteration number is %d\n", Z.N);
   
   // Now that I have an updated Z, must update ImageData
