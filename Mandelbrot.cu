@@ -486,10 +486,9 @@ int main(int argc, char* argv[])
     g = 0.5 + 0.5 * std::cos(2 * 3.14 * t + 2.1);
     b = 0.5 + 0.5 * std::cos(2 * 3.14 * t+ 4.2);
 
-    }
 
     lookupTable->SetTableValue(i, r, g, b, 1.0);
-}
+  }
 
   lookupTable->SetBelowRangeColor(0.0, 0.0, 0.0, 1.0);
   lookupTable->UseBelowRangeColorOn();
