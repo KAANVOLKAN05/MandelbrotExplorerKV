@@ -486,9 +486,9 @@ int main(int argc, char* argv[])
 
   // Standard color map
   lookupTable->SetNumberOfTableValues(512);
-  lookupTable->SetHueRange(0.0, 0.0);        // blue to red
+  lookupTable->SetHueRange(0.0, 1.0);        // blue to red
   lookupTable->SetSaturationRange(1.0, 1.0);   // fully saturated
-  lookupTable->SetValueRange(0.0, 1.0);        // bright
+  lookupTable->SetValueRange(1.0, 1.0);        // bright
   lookupTable->SetAlphaRange(1.0, 1.0);
   lookupTable->SetRampToLinear();
   lookupTable->Build();
