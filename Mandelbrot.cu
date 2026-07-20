@@ -809,7 +809,7 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
         Z.z[zStartIndex + i] = -1.0;  // below-range black
       } else {
         double smooth = plan[g].h_z[i] - log2(log2(plan[g].h_mag2[i])) + 4.0;
-        Z.z[zStartIndex + i] = std::fmod(smooth, COLOR_RANGE_MAX)
+        Z.z[zStartIndex + i] = std::fmod(smooth, COLOR_RANGE_MAX);
       }
     }
   }
