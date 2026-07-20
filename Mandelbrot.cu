@@ -40,10 +40,10 @@
 #define LINDEX(Nr, Nc, r, c)  ((c) + (r)*(Nc))
 
 // Display window dimensions
-#define NX (8 * DISPLAY_NX)
-#define NY (8 * DISPLAY_NY)
-#define DISPLAY_NX 100
-#define DISPLAY_NY 100
+#define NX (3 * DISPLAY_NX)
+#define NY (3 * DISPLAY_NY)
+#define DISPLAY_NX 300
+#define DISPLAY_NY 300
 
 // Color Values
 
@@ -466,23 +466,25 @@ int main(int argc, char* argv[])
 
 
   lookupTable->SetBelowRangeColor(1.0, 0.0, 0.0, 0.0);
-  lookupTable->UseBelowRangeColorOn();
+  //lookupTable->UseBelowRangeColorOn();
 
-  lookupTable->UseAboveRangeColorOff();
-/*
-  for (int i = 0; i < numColors; i++) {
-      double sn = (double)i / (double)(numColors - 1);
+  //lookupTable->UseAboveRangeColorOff();
+
+  for (int i = 0; i < colorRangeMax; i++) {
+      double s = (double)i / (double)(numColors - 1);
 
       // Similar idea to Inigo's palette:
       // col = 0.5 + 0.5*cos(0.2*sn + vec3(2.7, 3.2, 3.7))
       double r = 0.8;
-      double g = 0.5 + 0.5 * cos(3.0*3.14*sn);
+      double g = 0.5 + 0.5 * cos((s / colorRangeMax) * 2.0 * 3.14);
       double b = 1.0;
 
       lookupTable->SetTableValue(i, r, g, b, 1.0);
   }
+  lookupTable->SetAboveRangeColor(0.0, 0.0, 0.0, 1.0);
+  lookupTable->SetNanColor(0.0, 0.0, 0.0, 1.0);
   lookupTable->Build();
-*/
+
 /*
   // Standard color map
   lookupTable->SetHueRange(0.0, 0.0);        // blue to red
@@ -492,7 +494,7 @@ int main(int argc, char* argv[])
   lookupTable->SetRampToLinear();
   lookupTable->Build();
 */
-  
+/*
   //Below is the old table setup
   lookupTable->SetNumberOfTableValues(512);
   // I use sqrt just to get interesting colors
@@ -509,8 +511,11 @@ int main(int argc, char* argv[])
   lookupTable->SetScaleToLinear();
   //lookupTable->SetScaleToSQRT();  
   lookupTable->Build();
-  
+
+*/
   //----------------------------------------------------------------
+
+  /*
   // Colorbar to show off color map
   vtkSmartPointer<vtkScalarBarActor> scalarBar =
     vtkSmartPointer<vtkScalarBarActor>::New();
@@ -520,13 +525,13 @@ int main(int argc, char* argv[])
   scalarBar->GetTitleTextProperty()->SetColor(0,0,1);
   scalarBar->SetMaximumNumberOfColors(512);
 
-
   
   // Position scalarBar in window
   scalarBar->GetPositionCoordinate()->SetCoordinateSystemToNormalizedViewport();
   scalarBar->SetPosition(0.85, 0.1);
   scalarBar->SetWidth(.10);
   scalarBar->SetHeight(0.8);
+  */
 
 
   //--------------------------------------------------------
@@ -842,5 +847,3 @@ void f(double *z, double *mag2_out, double *lamr, double *lami, int local_N, int
 
 }
 
-
-//HI ii
