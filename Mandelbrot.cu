@@ -474,9 +474,9 @@ int main(int argc, char* argv[])
   lookupTable->SetScaleToLinear();
   lookupTable->Build();
 
-  for (int i = 0; i < numColors; ++i) {
+  for (int i = 0; i < NUM_COLORS; ++i) {
 
-    const double t = static_cast<double>(i) / static_cast<double>(numColors - 1);
+    const double t = static_cast<double>(i) / static_cast<double>(NUM_COLORS - 1);
 
     double r;
     double g = 0.0;
@@ -809,7 +809,7 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
         Z.z[zStartIndex + i] = -1.0;  // below-range black
       } else {
         double smooth = plan[g].h_z[i] - log2(log2(plan[g].h_mag2[i])) + 4.0;
-        Z.z[zStartIndex + i] = std::fmod(smooth, colorRangeMax);
+        Z.z[zStartIndex + i] = std::fmod(smooth, COLOR_RANGE_MAX)
       }
     }
   }
