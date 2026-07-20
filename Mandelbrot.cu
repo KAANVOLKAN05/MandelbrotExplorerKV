@@ -466,33 +466,34 @@ int main(int argc, char* argv[])
 
 
   lookupTable->SetBelowRangeColor(1.0, 0.0, 0.0, 0.0);
-  //lookupTable->UseBelowRangeColorOn();
+  lookupTable->UseBelowRangeColorOn();
 
-  //lookupTable->UseAboveRangeColorOff();
+  lookupTable->UseAboveRangeColorOff();
+/*
+  for (int i = 0; i < numColors; i++) {
+      double sn = (double)i / (double)(numColors - 1);
 
-  for (int i = 0; i < 250; i++) {
-      double s = (double)i / (double)(250 - 1);
-
+      // Similar idea to Inigo's palette:
+      // col = 0.5 + 0.5*cos(0.2*sn + vec3(2.7, 3.2, 3.7))
       double r = 0.8;
-      double g = 0.5 + 0.5 * cos((s / 250) * 2.0 * 3.14);
+      double g = 0.5 + 0.5 * cos(3.0*3.14*sn);
       double b = 1.0;
 
       lookupTable->SetTableValue(i, r, g, b, 1.0);
   }
-  lookupTable->SetAboveRangeColor(0.0, 0.0, 0.0, 1.0);
-  lookupTable->SetNanColor(0.0, 0.0, 0.0, 1.0);
   lookupTable->Build();
+*/
 
-/*
   // Standard color map
+  //lookupTable->SetNumberOfTableValues(512);
   lookupTable->SetHueRange(0.0, 0.0);        // blue to red
   lookupTable->SetSaturationRange(1.0, 1.0);   // fully saturated
   lookupTable->SetValueRange(0.0, 1.0);        // bright
   lookupTable->SetAlphaRange(1.0, 1.0);
   lookupTable->SetRampToLinear();
   lookupTable->Build();
-*/
-/*
+
+  /*
   //Below is the old table setup
   lookupTable->SetNumberOfTableValues(512);
   // I use sqrt just to get interesting colors
@@ -509,8 +510,8 @@ int main(int argc, char* argv[])
   lookupTable->SetScaleToLinear();
   //lookupTable->SetScaleToSQRT();  
   lookupTable->Build();
-
-*/
+  */
+  
   //----------------------------------------------------------------
 
   /*
@@ -574,7 +575,7 @@ int main(int argc, char* argv[])
   // Configure renderer
   std::cout << "Configure renderer ..." << endl;
   renderer->AddActor(imageActor);
-  //renderer->AddActor(scalarBar);
+  renderer->AddActor(scalarBar);
   renderer->SetBackground(colors->GetColor3d("MidnightBlue").GetData());
   camera->SetViewUp(0,1,0);
   //camera->SetFocalPoint(0.0, 1.0, 0.0);
