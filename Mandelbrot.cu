@@ -283,7 +283,7 @@ void moveZoom(int i, int j, double zoom) {
   //printf("New dx = %e, dy = %e\n", Z.dx, Z.dy);
   printf("New xc = %e, yc = %e\n", Z.xc, Z.yc);
 
-  Z.N = Z.N + 50*log(1/Z.w);
+  Z.N = Z.N + static_cast<int>(50 * std::log(1/Z.w));
   printf("New zoom number is %f\n", Z.w);
   printf("New iteration number is %d\n", Z.N);
   
