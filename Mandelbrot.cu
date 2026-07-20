@@ -40,10 +40,10 @@
 #define LINDEX(Nr, Nc, r, c)  ((c) + (r)*(Nc))
 
 // Display window dimensions
-#define NX (3 * DISPLAY_NX)
-#define NY (3 * DISPLAY_NY)
-#define DISPLAY_NX 300
-#define DISPLAY_NY 300
+#define NX (2 * DISPLAY_NX)
+#define NY (2 * DISPLAY_NY)
+#define DISPLAY_NX 800
+#define DISPLAY_NY 800
 
 // Color Values
 
