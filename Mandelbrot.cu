@@ -47,8 +47,8 @@
 
 // Color Values
 
-#define numColors 1000
-#define colorRangeMax 300
+#define NUM_COLORS 1000
+#define COLOR_RANGE_MAX 300
 
 
 // Values used to distribute the jobs amongst the GPUs.
@@ -283,7 +283,7 @@ void moveZoom(int i, int j, double zoom) {
   //printf("New dx = %e, dy = %e\n", Z.dx, Z.dy);
   printf("New xc = %e, yc = %e\n", Z.xc, Z.yc);
 
-  Z.N = Z.N + static_cast<int>(50 * std::log(10.0 / Z.w));
+  Z.N = Z.N + static_cast<int>(50 * std::log(1/Z.w));
   printf("New zoom number is %f\n", Z.w);
   printf("New iteration number is %d\n", Z.N);
   
@@ -469,8 +469,8 @@ int main(int argc, char* argv[])
 
   lookupTable->UseAboveRangeColorOff();
 
-  lookupTable->SetNumberOfTableValues(numColors);
-  lookupTable->SetTableRange(0.0, colorRangeMax);
+  lookupTable->SetNumberOfTableValues(NUM_COLORS);
+  lookupTable->SetTableRange(0.0, COLOR_RANGE_MAX);
   lookupTable->SetScaleToLinear();
   lookupTable->Build();
 
