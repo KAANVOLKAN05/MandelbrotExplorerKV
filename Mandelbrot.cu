@@ -575,7 +575,7 @@ int main(int argc, char* argv[])
   // Configure renderer
   std::cout << "Configure renderer ..." << endl;
   renderer->AddActor(imageActor);
-  renderer->AddActor(scalarBar);
+  //renderer->AddActor(scalarBar);
   renderer->SetBackground(colors->GetColor3d("MidnightBlue").GetData());
   camera->SetViewUp(0,1,0);
   //camera->SetFocalPoint(0.0, 1.0, 0.0);
