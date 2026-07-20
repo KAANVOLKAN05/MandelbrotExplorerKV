@@ -479,22 +479,13 @@ int main(int argc, char* argv[])
     const double t = static_cast<double>(i) / static_cast<double>(NUM_COLORS - 1);
 
     double r;
-    double g = 1.0;
+    double g;
     double b;
 
-    if (t <= 0.5) {
-      //red to blue
-        const double localT = 2.0 * t;
+    r = 0.5 + 0.5 * std::cos(2 * 3.14 * t);
+    g = 0.5 + 0.5 * std::cos(2 * 3.14 * t + 2.1);
+    b = 0.5 + 0.5 * std::cos(2 * 3.14 * t+ 4.2);
 
-        r = 1.0 - localT;
-        b = localT;
-    }
-    else {
-        //blue to red
-        const double localT = 2.0 * (t - 0.5);
-
-        r = localT;
-        b = 1.0 - localT;
     }
 
     lookupTable->SetTableValue(i, r, g, b, 1.0);
