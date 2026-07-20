@@ -471,7 +471,7 @@ int main(int argc, char* argv[])
   //lookupTable->UseAboveRangeColorOff();
 
   for (int i = 0; i < colorRangeMax; i++) {
-      double s = (double)i / (double)(numColors - 1);
+      double s = (double)i / (double)(colorRangeMax - 1);
 
       // Similar idea to Inigo's palette:
       // col = 0.5 + 0.5*cos(0.2*sn + vec3(2.7, 3.2, 3.7))
