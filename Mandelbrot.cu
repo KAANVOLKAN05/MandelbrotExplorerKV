@@ -479,18 +479,18 @@ int main(int argc, char* argv[])
     const double t = static_cast<double>(i) / static_cast<double>(NUM_COLORS - 1);
 
     double r;
-    double g = 0.0;
+    double g = 1.0;
     double b;
 
     if (t <= 0.5) {
-        // First half: red -> blue
+      //red to blue
         const double localT = 2.0 * t;
 
         r = 1.0 - localT;
         b = localT;
     }
     else {
-        // Second half: blue -> red
+        //blue to red
         const double localT = 2.0 * (t - 0.5);
 
         r = localT;
