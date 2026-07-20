@@ -47,7 +47,7 @@
 
 // Color Values
 
-#define NUM_COLORS 1000
+#define NUM_COLORS 10000
 #define COLOR_RANGE_MAX 300
 
 
@@ -470,7 +470,7 @@ int main(int argc, char* argv[])
   lookupTable->UseAboveRangeColorOff();
 
   lookupTable->SetNumberOfTableValues(NUM_COLORS);
-  lookupTable->SetTableRange(0.0, 3200);
+  lookupTable->SetTableRange(0.0, COLOR_RANGE_MAX);
   lookupTable->SetScaleToLinear();
   lookupTable->Build();
 
