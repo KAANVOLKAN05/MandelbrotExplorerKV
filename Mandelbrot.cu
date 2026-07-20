@@ -465,10 +465,42 @@ int main(int argc, char* argv[])
 
 
 
-  lookupTable->SetBelowRangeColor(1.0, 0.0, 0.0, 0.0);
-  lookupTable->UseBelowRangeColorOn();
 
   lookupTable->UseAboveRangeColorOff();
+
+  lookupTable->SetNumberOfTableValues(numColors);
+  lookupTable->SetTableRange(0.0, colorRangeMax);
+  lookupTable->SetScaleToLinear();
+  lookupTable->Build();
+
+  for (int i = 0; i < numColors; ++i) {
+
+    const double t = static_cast<double>(i) / static_cast<double>(numColors - 1);
+
+    double r;
+    double g = 0.0;
+    double b;
+
+    if (t <= 0.5) {
+        // First half: red -> blue
+        const double localT = 2.0 * t;
+
+        r = 1.0 - localT;
+        b = localT;
+    }
+    else {
+        // Second half: blue -> red
+        const double localT = 2.0 * (t - 0.5);
+
+        r = localT;
+        b = 1.0 - localT;
+    }
+
+    lookupTable->SetTableValue(i, r, g, b, 1.0);
+}
+
+  lookupTable->SetBelowRangeColor(0.0, 0.0, 0.0, 1.0);
+  lookupTable->UseBelowRangeColorOn();
 /*
   for (int i = 0; i < numColors; i++) {
       double sn = (double)i / (double)(numColors - 1);
@@ -483,7 +515,7 @@ int main(int argc, char* argv[])
   }
   lookupTable->Build();
 */
-
+  /*
   // Standard color map
   lookupTable->SetNumberOfTableValues(512);
   lookupTable->SetHueRange(0.0, 1.0);        // blue to red
@@ -492,7 +524,7 @@ int main(int argc, char* argv[])
   lookupTable->SetAlphaRange(1.0, 1.0);
   lookupTable->SetRampToLinear();
   lookupTable->Build();
-
+  */
   /*
   //Below is the old table setup
   lookupTable->SetNumberOfTableValues(512);
