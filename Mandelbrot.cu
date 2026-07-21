@@ -1,3 +1,5 @@
+
+// Visualization Libraries
 #include <vtkNamedColors.h>
 #include <vtkNew.h>
 #include <vtkProperty.h>
@@ -15,12 +17,15 @@
 #include <vtkVector.h>
 #include <vtkCamera.h>
 #include <vtkImageResize.h>
+
+//Classic C++ Libraries
 #include <iostream>
 #include <cstring>
 #include <complex>
 #include <vector>
 #include <array>
 #include <cmath>
+
 // This is for complex numbers under CUDA:
 #include <thrust/complex.h>
 
@@ -28,6 +33,7 @@
 #include <getopt.h>
 
 //Kaan Volkan's MultiGPU struct header
+// The contents of this header file are a struct which hold information that the cpu must use to launch the GPUs
 #include "MultiGPU.h"
 
 // Helper macross
@@ -40,13 +46,13 @@
 #define LINDEX(Nr, Nc, r, c)  ((c) + (r)*(Nc))
 
 // Display window dimensions
-#define NX (2 * DISPLAY_NX)
-#define NY (2 * DISPLAY_NY)
 #define DISPLAY_NX 800
 #define DISPLAY_NY 800
+// Computational dimentions these are double the display dimentions for cell avaraging to yield a better graph
+#define NX (2 * DISPLAY_NX)
+#define NY (2 * DISPLAY_NY)
 
 // Color Values
-
 #define NUM_COLORS 10000
 #define COLOR_RANGE_MAX 300
 
@@ -58,6 +64,7 @@
 
 //Maximum number of GPUs the user can specify
 #define MAX_GPUS 64
+int requestedGPUCount = 0;
 
 // Default number of logistic map iterations.
 #define NITER 300
@@ -75,6 +82,7 @@
 // Global struct holding info about complex plane and iterations.
 typedef struct {
   int N;          // Number of logistic map iterations (settable).
+  int baseN;      // Number of logistic map iteration at the start after N is set.
   double w, h;    // Width, height of image in real numbers.
   double xmin, xmax, ymin, ymax;  // bounds of plane
   double dx, dy;  // Step sizes in plane
@@ -83,7 +91,7 @@ typedef struct {
                   // I malloc the storage later, in main().
 } ComplexPlane;
 ComplexPlane Z;
-int requestedGPUCount = 0;
+
 
 //-----------------------------------------------------------------
 // Declare fcns computing the Mandelbrot set in the complex plane.
@@ -282,8 +290,8 @@ void moveZoom(int i, int j, double zoom) {
 	 Z.xmin, Z.ymin, Z.xmax, Z.ymax, Z.w, Z.h);
   //printf("New dx = %e, dy = %e\n", Z.dx, Z.dy);
   printf("New xc = %e, yc = %e\n", Z.xc, Z.yc);
-
-  Z.N = Z.N + static_cast<int>(30 * std::log(1/Z.w));
+  // Increases the number of iterations as zoom is increased
+  Z.N = Z.baseN + static_cast<int>(30 * std::log(3/Z.w));
   printf("New zoom number is %f\n", Z.w);
   printf("New iteration number is %d\n", Z.N);
   
@@ -439,14 +447,13 @@ int main(int argc, char* argv[])
       }
 
       break;
-      fprintf (stderr,
-               "Unknown option character 0x%x'.\n",
-               optopt);
+      fprintf (stderr,"Unknown option character 0x%x'.\n", optopt);
       return 1;
     default:
       abort ();
     }
   }
+  Z.baseN = Z.N;
   printf("Starting x0 = %e, y0 = %e, w = %e, h = %e, N = %d\n", x0, y0, Z.w, Z.h, Z.N);  
 
   //---------------------------------------------------------
@@ -460,15 +467,12 @@ int main(int argc, char* argv[])
   //--------------------------------------------------------------------
 
   // Map the scalar values in the image to colors with a lookup table
-  // Play with these settings to alter the color map.
+  
+  
   vtkSmartPointer<vtkLookupTable> lookupTable =
     vtkSmartPointer<vtkLookupTable>::New();
 
-
-
-
-  lookupTable->UseAboveRangeColorOff();
-
+  
   lookupTable->SetNumberOfTableValues(NUM_COLORS);
   lookupTable->SetTableRange(0.0, COLOR_RANGE_MAX);
   lookupTable->SetScaleToLinear();
@@ -492,60 +496,18 @@ int main(int argc, char* argv[])
 
   lookupTable->SetBelowRangeColor(0.0, 0.0, 0.0, 1.0);
   lookupTable->UseBelowRangeColorOn();
-/*
-  for (int i = 0; i < numColors; i++) {
-      double sn = (double)i / (double)(numColors - 1);
-
-      // Similar idea to Inigo's palette:
-      // col = 0.5 + 0.5*cos(0.2*sn + vec3(2.7, 3.2, 3.7))
-      double r = 0.8;
-      double g = 0.5 + 0.5 * cos(3.0*3.14*sn);
-      double b = 1.0;
-
-      lookupTable->SetTableValue(i, r, g, b, 1.0);
-  }
-  lookupTable->Build();
-*/
-  /*
-  // Standard color map
-  lookupTable->SetNumberOfTableValues(512);
-  lookupTable->SetHueRange(0.0, 1.0);        // blue to red
-  lookupTable->SetSaturationRange(1.0, 1.0);   // fully saturated
-  lookupTable->SetValueRange(1.0, 1.0);        // bright
-  lookupTable->SetAlphaRange(1.0, 1.0);
-  lookupTable->SetRampToLinear();
-  lookupTable->Build();
-  */
-  /*
-  //Below is the old table setup
-  lookupTable->SetNumberOfTableValues(512);
-  // I use sqrt just to get interesting colors
-  //lookupTable->SetTableRange(0, sqrt(Z.N-1)); 
-  //version without the sqrt 
-  lookupTable->SetTableRange(0, colorRangeMax);  
-  //lookupTable->SetTableRange(0, log(Z.N-1));  
-  lookupTable->SetAboveRangeColor(0.0, 0.0, 0.0, 1.0);
-  lookupTable->SetNanColor(0.0, 0.0, 0.0, 1.0);
-  //lookupTable->SetRampToLinear();
-  //lookupTable->SetRampToSQRT();
-  //lookupTable->SetRampToSCurve();
-  //lookupTable->SetScaleToLog10();
-  lookupTable->SetScaleToLinear();
-  //lookupTable->SetScaleToSQRT();  
-  lookupTable->Build();
-  */
   
   //----------------------------------------------------------------
 
-  /*
   // Colorbar to show off color map
   vtkSmartPointer<vtkScalarBarActor> scalarBar =
     vtkSmartPointer<vtkScalarBarActor>::New();
   scalarBar->SetLookupTable( lookupTable );
   scalarBar->SetOrientationToVertical();
-  scalarBar->GetLabelTextProperty()->SetColor(0,0,1);
-  scalarBar->GetTitleTextProperty()->SetColor(0,0,1);
-  scalarBar->SetMaximumNumberOfColors(512);
+  scalarBar->SetTitle("Color Cycle");
+  scalarBar->SetNumberOfLabels(0);
+  scalarBar->GetTitleTextProperty()->SetColor(0, 0, 1);
+  scalarBar->SetMaximumNumberOfColors(NUM_COLORS);
 
   
   // Position scalarBar in window
@@ -553,7 +515,7 @@ int main(int argc, char* argv[])
   scalarBar->SetPosition(0.85, 0.1);
   scalarBar->SetWidth(.10);
   scalarBar->SetHeight(0.8);
-  */
+
 
 
   //--------------------------------------------------------
@@ -598,7 +560,7 @@ int main(int argc, char* argv[])
   // Configure renderer
   std::cout << "Configure renderer ..." << endl;
   renderer->AddActor(imageActor);
-  //renderer->AddActor(scalarBar);
+  renderer->AddActor(scalarBar);
   renderer->SetBackground(colors->GetColor3d("MidnightBlue").GetData());
   camera->SetViewUp(0,1,0);
   //camera->SetFocalPoint(0.0, 1.0, 0.0);
@@ -735,10 +697,6 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
     plan[g].h_lami = nullptr;
     plan[g].h_z    = nullptr;
     plan[g].h_mag2    = nullptr;
-    //plan[g].h_lamr = (double*) malloc(plan[g].local_Bytes);
-    //plan[g].h_lami = (double*) malloc(plan[g].local_Bytes);
-    //plan[g].h_z    = (double*) malloc(plan[g].local_Bytes);
-    // Same as the previous lines but according to AI it is easier for CUDA to transfer, I must check this later
     gpuErrchk(cudaMallocHost((void**)&plan[g].h_lamr, plan[g].local_Bytes));
     gpuErrchk(cudaMallocHost((void**)&plan[g].h_lami, plan[g].local_Bytes));
     gpuErrchk(cudaMallocHost((void**)&plan[g].h_z,    plan[g].local_Bytes));
@@ -768,8 +726,8 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
     gpuErrchk(cudaMalloc((void**)&plan[g].d_z, plan[g].local_Bytes));
     gpuErrchk(cudaMalloc((void**)&plan[g].d_mag2, plan[g].local_Bytes));
     // Now we have to copy from host to the device memory we allocated
-    gpuErrchk(cudaMemcpyAsync(plan[g].d_lamr, plan[g].h_lamr, plan[g].local_Bytes, cudaMemcpyHostToDevice));
-    gpuErrchk(cudaMemcpyAsync(plan[g].d_lami, plan[g].h_lami, plan[g].local_Bytes, cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpyAsync(plan[g].d_lamr, plan[g].h_lamr, plan[g].local_Bytes, cudaMemcpyHostToDevice, plan[g].stream));
+    gpuErrchk(cudaMemcpyAsync(plan[g].d_lami, plan[g].h_lami, plan[g].local_Bytes, cudaMemcpyHostToDevice, plan[g].stream));
     
 
     int threads = 256;
@@ -813,6 +771,7 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
     gpuErrchk(cudaFree(plan[g].d_lamr));
     gpuErrchk(cudaFree(plan[g].d_lami));
     gpuErrchk(cudaFree(plan[g].d_z));
+    gpuErrchk(cudaFree(plan[g].d_mag2));
 
     gpuErrchk(cudaStreamDestroy(plan[g].stream));
 
