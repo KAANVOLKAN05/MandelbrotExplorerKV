@@ -64,7 +64,6 @@
 
 //Maximum number of GPUs the user can specify
 #define MAX_GPUS 64
-int requestedGPUCount = 0;
 
 // Default number of logistic map iterations.
 #define NITER 300
@@ -92,18 +91,25 @@ typedef struct {
 } ComplexPlane;
 ComplexPlane Z;
 
+TGPUplan plan[MAX_GPUS]; //TGPUplan is defined under the header file.
+int GPU_N ;
+int requestedGPUCount = 0;
+
+
 
 //-----------------------------------------------------------------
 // Declare fcns computing the Mandelbrot set in the complex plane.
 void computeMandelbrot(vtkUniformGrid *imageData);
 __global__
-void f(double *z, double *mag2_out, double *lamr, double *lami, int local_N, int N);
+void f(double *z, double *mag2_out, int local_N, int local_NX, int yOffset,double xmin,double ymin,double dx,double dy, int N);
 
 // Declare host-side graphics manipulation fcns.
 void moveZoom(int i, int j, double zoom);
 void moveTranslate(vtkVector<int, 4> p);
 void MapIndexToPhysicalPoint(int i, int j, int k, double xyz[3]);
 void insertZIntoImageData(vtkUniformGrid *imageData, double *z);
+void initializeMultiGPU();
+void cleanupMultiGPU();
 
 
 //--------------------------------------------------------
@@ -295,9 +301,6 @@ void moveZoom(int i, int j, double zoom) {
   printf("New zoom number is %f\n", Z.w);
   printf("New iteration number is %d\n", Z.N);
   
-  // Now that I have an updated Z, must update ImageData
-  rImageData->AllocateScalars(VTK_DOUBLE, 1);
-  
   // Now compute Mandelbrot set using new origin and spacing.
   computeMandelbrot(rImageData);  // Compute the whole set.
 
@@ -351,9 +354,6 @@ void moveTranslate(vtkVector<int, 4> p) {
   //printf("New dx = %e, dy = %e\n", Z.dx, Z.dy);
   printf("New xc = %e, yc = %e\n", Z.xc, Z.yc);  
 
-  // For some reason I need to do this in order to refresh drawing.
-  rImageData->AllocateScalars(VTK_DOUBLE, 1);
-  
   // Now compute Mandelbrot set using new origin
   computeMandelbrot(rImageData);  // Compute the whole set.
   
@@ -550,6 +550,7 @@ int main(int argc, char* argv[])
   
   // Compute initial Mandelbrot for display
   std::cout << "Compute initial Mandelbrot ... " << endl;  
+  initializeMultiGPU();
   computeMandelbrot(rImageData);  // Compute the whole set.
   
   // Configure image actor.  Actor has built-in mapper.
@@ -622,27 +623,13 @@ void insertZIntoImageData(vtkUniformGrid *imageData, double *z) {
 
 
 //=====================================================================
+
 __host__
-void computeMandelbrot(vtkUniformGrid *imageData) {
-  // This computes the Mandelbrot set using the current values of the
-  // complex plane Z.  It then sticks the updated set into
-  // imageData so it can be displayed.
-  int ix, iy;
-  double *lamr;
-  double *lami;
+void initializeMultiGPU(){
 
-  gpuErrchk(cudaMallocHost((void**)&lamr, NX * NY * sizeof(double)));
-  gpuErrchk(cudaMallocHost((void**)&lami, NX * NY * sizeof(double)));
+  //Check the available GPU count
 
-  
-  
-  
-  //-------------------------------------------------------------------
-  // Now set up CUDA stuff
-
-  //Lets see how many GPUs we have
   int availableGPUCount = 0;
-  int GPU_N ;
   gpuErrchk(cudaGetDeviceCount(&availableGPUCount));
 
   if (requestedGPUCount == 0) {
@@ -654,104 +641,78 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
     std::cout << "We have" << availableGPUCount << " GPU devices and we are using"<< GPU_N<< std::endl;
   }
   if(requestedGPUCount > availableGPUCount){
-    std::cout<<"Requested more GPUs then requested\n";
+    std::cout<<"Requested more GPUs then available\n";
     exit(EXIT_FAILURE);
   }
+  int rowsPerGPU = NY / GPU_N;
+  int rowsRemainder = NY % GPU_N;
+  int currentYOffset = 0;
 
-
-
-  std::cout << "We have " << GPU_N << " GPU devices" << std::endl;
-  TGPUplan plan[GPU_N]; //TGPUplan is defined under the header file.
-
-  // Make local lambda plane
-  for (ix = 0; ix < NX; ix++) {
-    for (iy = 0; iy < NY; iy++) {
-      lamr[LINDEX(NY, NX, iy, ix)] = Z.xmin + ix*Z.dx;
-      lami[LINDEX(NY, NX, iy, ix)] = Z.ymin + iy*Z.dy;
-    }
-  }
-
-  //We want to divide the computation by rows
-  //Hence we need to divide how many rows we have by our GPU count to find how many rows each GPU needs to handle
-  int rows_per_GPU = NY / GPU_N;
-  int rows_remainder = NY % GPU_N;
-  int current_y_offset = 0;
-  //Now lets start making these plans for what each GPU needs to be told
   for (int g = 0; g < GPU_N; g++)
   {
+    // HOST (CPU) side
     plan[g].deviceID = g; //Device=0,1,2,3,...
     plan[g].xOffset = 0;  //We are only dividing by rows so no need to offset in the colums
-    plan[g].yOffset = current_y_offset; // I will be incrementing this at the end of the loop
+    plan[g].yOffset = currentYOffset; // I will be incrementing this at the end of the loop
+
     plan[g].global_NX = NX;   //Nothing suprising
     plan[g].global_NY = NY;   //Nothing suprising
-    plan[g].local_NX = NX;
-    plan[g].local_NY = rows_per_GPU;
+    plan[g].local_NX = NX;    // I am dividing by rows so this stays the same
+    plan[g].local_NY = rowsPerGPU;
     if (g == GPU_N - 1 ){
-      plan[g].local_NY += rows_remainder;  // For the Last GPU, add the nbumber of leftover rows too. 
+      plan[g].local_NY += rowsRemainder;  // For the Last GPU, add the nbumber of leftover rows too. 
     }
     plan[g].local_N = plan[g].local_NY * plan[g].local_NX;
     plan[g].local_Bytes = plan[g].local_N * sizeof(double);
-    
+    currentYOffset += plan[g].local_NY;
+
     // It is safer to first assign nullpointers to these in case a failure occurs later on.
-    plan[g].h_lamr = nullptr;
-    plan[g].h_lami = nullptr;
     plan[g].h_z    = nullptr;
     plan[g].h_mag2    = nullptr;
-    gpuErrchk(cudaMallocHost((void**)&plan[g].h_lamr, plan[g].local_Bytes));
-    gpuErrchk(cudaMallocHost((void**)&plan[g].h_lami, plan[g].local_Bytes));
     gpuErrchk(cudaMallocHost((void**)&plan[g].h_z,    plan[g].local_Bytes));
     gpuErrchk(cudaMallocHost((void**)&plan[g].h_mag2, plan[g].local_Bytes));
     //Now lets fill the host memory we allocated
-    int startIndex = plan[g].yOffset * NX;
 
-    memcpy(plan[g].h_lamr, lamr + startIndex, plan[g].local_Bytes);
-    memcpy(plan[g].h_lami, lami + startIndex, plan[g].local_Bytes);
-
-
-    // It is safer to first assign nullpointers to these in case a failure occurs later on.
-    plan[g].d_lamr = nullptr;
-    plan[g].d_lami = nullptr;
-    plan[g].d_z    = nullptr;
-    plan[g].d_mag2 = nullptr;
-
+    // GPU side 
     //Now before allocating the memory on the GPU, lets select our device
     gpuErrchk(cudaSetDevice(plan[g].deviceID));
-
-    //Explanation will come later
     gpuErrchk(cudaStreamCreate(&plan[g].stream));
 
+    // It is safer to first assign nullpointers to these in case a failure occurs later on.
+    plan[g].d_z    = nullptr;
+    plan[g].d_mag2 = nullptr;
     //Now we can allocate the device memory via cudaMalloc
-    gpuErrchk(cudaMalloc((void**)&plan[g].d_lamr, plan[g].local_Bytes));
-    gpuErrchk(cudaMalloc((void**)&plan[g].d_lami, plan[g].local_Bytes));
     gpuErrchk(cudaMalloc((void**)&plan[g].d_z, plan[g].local_Bytes));
     gpuErrchk(cudaMalloc((void**)&plan[g].d_mag2, plan[g].local_Bytes));
-    // Now we have to copy from host to the device memory we allocated
-    gpuErrchk(cudaMemcpyAsync(plan[g].d_lamr, plan[g].h_lamr, plan[g].local_Bytes, cudaMemcpyHostToDevice, plan[g].stream));
-    gpuErrchk(cudaMemcpyAsync(plan[g].d_lami, plan[g].h_lami, plan[g].local_Bytes, cudaMemcpyHostToDevice, plan[g].stream));
-    
-
-    int threads = 256;
-    int blocks = (plan[g].local_N + threads - 1) / threads;
-
-    //Now lets launch the kernel 
-
-    f<<<blocks,threads, 0, plan[g].stream>>>(plan[g].d_z,plan[g].d_mag2, plan[g].d_lamr, plan[g].d_lami, plan[g].local_N, Z.N);
-    gpuErrchk(cudaPeekAtLastError());
-    //Now let us add to the offset from before
-    current_y_offset = current_y_offset + plan[g].local_NY;
-    
-    gpuErrchk(cudaMemcpyAsync(plan[g].h_z,plan[g].d_z,plan[g].local_Bytes,cudaMemcpyDeviceToHost, plan[g].stream));
-    gpuErrchk(cudaMemcpyAsync(plan[g].h_mag2,plan[g].d_mag2,plan[g].local_Bytes,cudaMemcpyDeviceToHost, plan[g].stream));
-
 
   }
+
+
+
+}
+__host__
+void computeMandelbrot(vtkUniformGrid *imageData) {
+  // This computes the Mandelbrot set using the current values of the
+  // complex plane Z.  It then sticks the updated set into
+  // imageData so it can be displayed.
+
+  
+  //Now lets launch each kernel 
   for (int g = 0; g < GPU_N; g++) {
+    gpuErrchk(cudaSetDevice(plan[g].deviceID));
+    int threads = 256;
+    int blocks = (plan[g].local_N + threads - 1) / threads;
+    f<<<blocks,threads, 0, plan[g].stream>>>(plan[g].d_z,plan[g].d_mag2, plan[g].local_N, plan[g].local_NX, plan[g].yOffset, Z.xmin, Z.ymin, Z.dx, Z.dy, Z.N);
+    gpuErrchk(cudaMemcpyAsync(plan[g].h_z, plan[g].d_z, plan[g].local_Bytes, cudaMemcpyDeviceToHost, plan[g].stream));
+    gpuErrchk(cudaMemcpyAsync(plan[g].h_mag2, plan[g].d_mag2, plan[g].local_Bytes, cudaMemcpyDeviceToHost, plan[g].stream));
+  }
+  for(int g = 0; g < GPU_N; g++) {
     gpuErrchk(cudaSetDevice(plan[g].deviceID));
     gpuErrchk(cudaStreamSynchronize(plan[g].stream));
   }
+
   for (int g = 0; g < GPU_N; g++) {
     int zStartIndex = plan[g].yOffset * NX;
-
     for (int i = 0; i < plan[g].local_N; i++) {
       if ((int)plan[g].h_z[i] == Z.N) {
         Z.z[zStartIndex + i] = -1.0;  // below-range black
@@ -764,24 +725,8 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
   
   // Insert returned z values into imageData
   insertZIntoImageData(imageData, Z.z);
+  imageData->Modified();
 
- for (int g = 0; g < GPU_N; g++) {
-    gpuErrchk(cudaSetDevice(plan[g].deviceID));
-
-    gpuErrchk(cudaFree(plan[g].d_lamr));
-    gpuErrchk(cudaFree(plan[g].d_lami));
-    gpuErrchk(cudaFree(plan[g].d_z));
-    gpuErrchk(cudaFree(plan[g].d_mag2));
-
-    gpuErrchk(cudaStreamDestroy(plan[g].stream));
-
-    gpuErrchk(cudaFreeHost(plan[g].h_lamr));
-    gpuErrchk(cudaFreeHost(plan[g].h_lami));
-    gpuErrchk(cudaFreeHost(plan[g].h_z));
-    gpuErrchk(cudaFreeHost(plan[g].h_mag2));
-  }
-  gpuErrchk(cudaFreeHost(lamr));
-  gpuErrchk(cudaFreeHost(lami));
   std::cout << " ... done!\n" << std::endl;
   return;
 }
@@ -789,13 +734,10 @@ void computeMandelbrot(vtkUniformGrid *imageData) {
 //---------------------------------------------------------------
 // This fcn iterates a point in the complex plane.
 __global__
-void f(double *z, double *mag2_out, double *lamr, double *lami, int local_N, int N) {
+void f(double *z, double *mag2_out, int local_N, int local_NX, int yOffset, double xmin, double ymin, double dx, double dy, int N) {
 
+  // tid is the one dimentional indexing of the GPU 
   int tid = threadIdx.x + blockIdx.x * blockDim.x;
-  int k;
-  //B is the break condition
-  const double B = 256.0;
-
   //The if statement below workes as such,
   // When Cuda launches its threads, they are launched in blocks,
   //These blocks may not be multiples of our how many points on the graph we are computing,
@@ -803,11 +745,27 @@ void f(double *z, double *mag2_out, double *lamr, double *lami, int local_N, int
   if (tid >= local_N){
     return;
   }
+  // To get row column and inidices we do the following
+  int localColumn = tid % local_NX;
+  int localRow = tid / local_NX;
+
+  // To figure out which row of the entire picture our local rows correspond to, we use the y offset
+  int globalColumn = localColumn;
+  int globalRow = localRow + yOffset;
+
+
+  // Deciding the coordinates
+  double realPart = xmin + globalColumn * dx;
+  double imaginaryPart = ymin + globalRow * dy;
+
+
+  thrust::complex<double> mylam(realPart, imaginaryPart);
+
   
-
-  thrust::complex<double> mylam(lamr[tid],lami[tid]);
-  //printf("mylam = [%f, %f]\n", mylam.real(), mylam.imag());
-
+  //B is the break condition
+  const double B = 256.0;
+  int k;
+  
   // Modify this to choose between Mandelbrot and Logistic iteration.
   //thrust::complex<double> x(0.5, 0.0);   // Logistic
   thrust::complex<double> x(0.0, 0.0);  // Mandelbrot
