@@ -606,18 +606,9 @@ int main(int argc, char* argv[])
 //====================================================================
 __host__
 void insertZIntoImageData(vtkUniformGrid *imageData, double *z) {
-  int ix, iy, iz;
-  double *pixel;
-
   // Insert returned z values into imageData
-  iz = 0;
-  for (ix = 0; ix < NX; ix++) {
-    for (iy = 0; iy < NY; iy++) {
-      pixel = static_cast<double*>(imageData->GetScalarPointer(ix, iy, iz));
-      *pixel = z[LINDEX(NY, NX, iy, ix)];
-      //printf("z[%d,%d] = %f\n", ix, iy, *pixel);
-    }
-  }
+  double *pixels = static_cast<double*>(imageData->GetScalarPointer(0, 0, 0));
+  std::memcpy(pixels,z,NX * NY * sizeof(double));
 }
 
 
