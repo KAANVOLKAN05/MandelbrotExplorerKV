@@ -1,0 +1,3 @@
+/home/student/MandelbrotExplorerKV/build/CMakeFiles/Mandelbrot.dir
+/home/student/MandelbrotExplorerKV/build/CMakeFiles/edit_cache.dir
+/home/student/MandelbrotExplorerKV/build/CMakeFiles/rebuild_cache.dir
