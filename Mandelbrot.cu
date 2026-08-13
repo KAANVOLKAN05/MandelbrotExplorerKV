@@ -626,7 +626,7 @@ void initializeMultiGPU(){
   gpuErrchk(cudaGetDeviceCount(&availableGPUCount));
 
   if (requestedGPUCount == 0) {
-    GPU_N = availableGPUCount -1;
+    GPU_N = availableGPUCount - FIRST_USABLE_GPU;
     std::cout << "We have" << GPU_N << " GPU devices and we are using all" << std::endl;
   } else {
     
