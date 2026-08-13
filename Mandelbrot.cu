@@ -39,7 +39,7 @@
 // Helper macross
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #define MAX(a,b) ((a)>(b)?(a):(b))
-#define FIRST_USABLE_GPU 1
+#define FIRST_USABLE_GPU 0
 
 // Macro returning the linear index into matrix of
 // dimensions Nc (cols), Nr (rows).  The linear index
