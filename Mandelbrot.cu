@@ -52,6 +52,7 @@
 // Computational dimentions these are double the display dimentions for cell avaraging to yield a better graph
 #define NX (2 * DISPLAY_NX)
 #define NY (2 * DISPLAY_NY)
+#define ITERATION_SCALAR = 200
 
 // Color Values
 #define NUM_COLORS 10000
